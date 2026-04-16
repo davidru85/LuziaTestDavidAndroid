@@ -1,0 +1,11 @@
+package com.ruizurraca.luziatestdavid.di
+
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
+    // @Binds for ChatRepository -> ChatRepositoryImpl arrives in Phase 4.
+}

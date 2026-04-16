@@ -19,7 +19,7 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 - [x] 1.3 **App Entry:** Create `LuziaApp.kt` (`@HiltAndroidApp`) and `MainActivity.kt` (`@AndroidEntryPoint`).
 - [x] 1.4 **Permissions:** Declare `RECORD_AUDIO` and `INTERNET` in `AndroidManifest.xml`.
 - [x] 1.5 **Config:** Set up `BuildConfig.BASE_URL` via `local.properties`.
-- [ ] 1.6 **DI Skeleton:** Create placeholder Hilt modules (`NetworkModule`, `DatabaseModule`, `RepositoryModule`).
+- [x] 1.6 **DI Skeleton:** Create placeholder Hilt modules (`NetworkModule`, `DatabaseModule`, `RepositoryModule`).
 - [x] 1.7 **Build Variants:** Configure `staging` and `production` flavors.
 - [x] 1.8 **Verification:** Execute `./gradlew assembleStagingDebug` $\rightarrow$ **Result: SUCCESS**.
 
