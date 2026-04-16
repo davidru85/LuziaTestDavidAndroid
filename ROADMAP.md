@@ -14,14 +14,14 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 ### Phase 1: Foundation & Project Setup
 *Goal: Establish a compilable, configured, and "empty" project skeleton.*
 
-- [ ] 1.1 **Dependencies:** Update `libs.versions.toml` (Hilt, K10, Ktor, Room, kotlinx.serialization, Testing libs).
-- [ ] 1.2 **Plugins:** Register all required Gradle plugins (`kotlin.serialization`, `hilt.android`, `ksp`).
-- [ ] 1.3 **App Entry:** Create `LuziaApp.kt` (`@HiltAndroidApp`) and `MainActivity.kt` (`@AndroidEntryPoint`).
-- [ ] 1.4 **Permissions:** Declare `RECORD_AUDIO` and `INTERNET` in `AndroidManifest.xml`.
-- [ ] 1.5 **Config:** Set up `BuildConfig.BASE_URL` via `local.properties`.
-- [ ] 1.6 **DI Skeleton:** Create placeholder Hilt modules (`NetworkModule`, `DatabaseModule`, `RepositoryModule`).
-- [ ] 1.7 **Build Variants:** Configure `staging` and `production` flavors.
-- [ ] 1.8 **Verification:** Execute `./gradlew assembleStagingDebug` $\rightarrow$ **Result: SUCCESS**.
+- [x] 1.1 **Dependencies:** Update `libs.versions.toml` (Hilt, K10, Ktor, Room, kotlinx.serialization, Testing libs).
+- [x] 1.2 **Plugins:** Register all required Gradle plugins (`kotlin.serialization`, `hilt.android`, `ksp`).
+- [x] 1.3 **App Entry:** Create `LuziaApp.kt` (`@HiltAndroidApp`) and `MainActivity.kt` (`@AndroidEntryPoint`).
+- [x] 1.4 **Permissions:** Declare `RECORD_AUDIO` and `INTERNET` in `AndroidManifest.xml`.
+- [x] 1.5 **Config:** Set up `BuildConfig.BASE_URL` via `local.properties`.
+- [x] 1.6 **DI Skeleton:** Create placeholder Hilt modules (`NetworkModule`, `DatabaseModule`, `RepositoryModule`).
+- [x] 1.7 **Build Variants:** Configure `staging` and `production` flavors.
+- [x] 1.8 **Verification:** Execute `./gradlew assembleStagingDebug` $\rightarrow$ **Result: SUCCESS**.
 
 ### Phase 2: CI/CD Automation
 *Goal: Automated validation of every commit.*

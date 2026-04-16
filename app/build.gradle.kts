@@ -1,7 +1,21 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt.android)
 }
+
+val localProps = Properties().apply {
+    rootProject.file("local.properties").inputStream().use { load(it) }
+}
+
+fun requireLocalProp(key: String): String =
+    checkNotNull(localProps.getProperty(key)) {
+        "$key is missing from local.properties"
+    }
 
 android {
     namespace = "com.ruizurraca.luziatestdavid"
@@ -30,12 +44,40 @@ android {
             )
         }
     }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"${requireLocalProp("BASE_URL_STAGING")}\""
+            )
+        }
+        create("production") {
+            dimension = "environment"
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"${requireLocalProp("BASE_URL_PRODUCTION")}\""
+            )
+        }
+    }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -48,6 +90,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
