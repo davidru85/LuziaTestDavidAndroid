@@ -1,6 +1,7 @@
 package com.ruizurraca.luziatestdavid.di
 
 import com.ruizurraca.luziatestdavid.di.qualifier.IoDispatcher
+import com.ruizurraca.luziatestdavid.di.qualifier.MainDispatcher
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,4 +18,9 @@ object DispatcherModule {
     @Singleton
     @IoDispatcher
     fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
+
+    @Provides
+    @Singleton
+    @MainDispatcher
+    fun provideMainDispatcher(): CoroutineDispatcher = Dispatchers.Main
 }
