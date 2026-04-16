@@ -26,8 +26,8 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 ### Phase 2: CI/CD Automation
 *Goal: Automated validation of every commit.*
 
-- [ ] 2.1 **Workflow:** Create `.github/workflows/android-ci.yml`.
-- [ ] 2.2 **Pipeline:** Implement steps: `Lint` $\rightarrow$ `Unit Tests` $\rightarrow$ `Build`.
+- [x] 2.1 **Workflow:** Create `.github/workflows/android-ci.yml`.
+- [x] 2.2 **Pipeline:** Implement steps: `Lint` $\rightarrow$ `Unit Tests` $\rightarrow$ `Build`.
 
 ### Phase 3: Domain Layer (TDD)
 *Goal: Implement the pure Kotlin business logic.*

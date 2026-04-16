@@ -24,3 +24,5 @@ local.properties
 .idea/vcs.xml
 .idea/inspectionProfiles/Project_Default.xml
 .vscode/settings.json
+.idea/deviceManager.xml
+.idea/androidTestResultsUserPreferences.xml
