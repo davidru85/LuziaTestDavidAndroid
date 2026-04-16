@@ -1,6 +1,8 @@
 package com.ruizurraca.luziatestdavid.data.repository
 
 import app.cash.turbine.test
+import com.ruizurraca.luziatestdavid.data.local.dao.ChatMessageDao
+import com.ruizurraca.luziatestdavid.data.local.entity.ChatMessageEntity
 import com.ruizurraca.luziatestdavid.data.remote.api.L1ApiClient
 import com.ruizurraca.luziatestdavid.data.remote.dto.TranscribeResponseDto
 import com.ruizurraca.luziatestdavid.data.remote.mapper.ChatMapper
@@ -8,6 +10,7 @@ import com.ruizurraca.luziatestdavid.data.remote.sse.SseParser
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.model.MessageRole
+import com.ruizurraca.luziatestdavid.domain.model.MessageStatus
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -43,12 +46,14 @@ class ChatRepositoryImplTest {
     private val apiClient: L1ApiClient = mockk()
     private val sseParser = SseParser()
     private val chatMapper = ChatMapper()
+    private val dao: ChatMessageDao = mockk()
     private val dispatcher = UnconfinedTestDispatcher()
 
     private val repository = ChatRepositoryImpl(
         apiClient = apiClient,
         sseParser = sseParser,
         chatMapper = chatMapper,
+        dao = dao,
         ioDispatcher = dispatcher
     )
 
@@ -137,6 +142,90 @@ class ChatRepositoryImplTest {
             assertTrue(tail is Resource.Error) { "expected Error, got $tail" }
             awaitComplete()
         }
+    }
+
+    // endregion
+
+    // region persistence
+
+    @Test
+    fun `saveMessage maps domain to entity and calls dao insert`() = runTest(dispatcher) {
+        val message = ChatMessage(
+            id = "u1",
+            role = MessageRole.USER,
+            content = "Hi",
+            timestamp = 1_000L,
+            status = MessageStatus.DELIVERED
+        )
+        coEvery { dao.insert(any()) } returns Unit
+
+        repository.saveMessage(message)
+
+        coVerify {
+            dao.insert(
+                ChatMessageEntity(
+                    id = "u1",
+                    role = "user",
+                    content = "Hi",
+                    timestamp = 1_000L,
+                    status = "DELIVERED"
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `observeConversation maps entities to domain preserving all roles and statuses`() = runTest(dispatcher) {
+        val entities = listOf(
+            ChatMessageEntity(
+                id = "s",
+                role = "system",
+                content = "You are helpful.",
+                timestamp = 0L,
+                status = "DELIVERED"
+            ),
+            ChatMessageEntity(
+                id = "u",
+                role = "user",
+                content = "Hello",
+                timestamp = 1L,
+                status = "PENDING"
+            ),
+            ChatMessageEntity(
+                id = "a",
+                role = "assistant",
+                content = "Hi!",
+                timestamp = 2L,
+                status = "FAILED"
+            )
+        )
+        every { dao.observeAll() } returns flowOf(entities)
+
+        repository.observeConversation().test {
+            val messages = awaitItem()
+            assertEquals(3, messages.size)
+
+            assertEquals(MessageRole.SYSTEM, messages[0].role)
+            assertEquals(MessageStatus.DELIVERED, messages[0].status)
+            assertEquals("You are helpful.", messages[0].content)
+
+            assertEquals(MessageRole.USER, messages[1].role)
+            assertEquals(MessageStatus.PENDING, messages[1].status)
+
+            assertEquals(MessageRole.ASSISTANT, messages[2].role)
+            assertEquals(MessageStatus.FAILED, messages[2].status)
+
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `clearConversation delegates to dao deleteAll`() = runTest(dispatcher) {
+        coEvery { dao.deleteAll() } returns Unit
+
+        repository.clearConversation()
+
+        coVerify { dao.deleteAll() }
     }
 
     // endregion
