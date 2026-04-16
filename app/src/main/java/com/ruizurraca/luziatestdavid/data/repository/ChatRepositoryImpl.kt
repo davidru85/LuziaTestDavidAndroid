@@ -42,12 +42,7 @@ class ChatRepositoryImpl(
         val requestDto = chatMapper.toRequestDto(history)
         return sseParser
             .parse(apiClient.streamChat(requestDto))
-            .map<SseEvent, Resource<String>> { event ->
-                when (event) {
-                    is SseEvent.Token -> Resource.Success(event.text)
-                    is SseEvent.Error -> Resource.Error("${event.code}: ${event.message}")
-                }
-            }
+            .map { it.toResource() }
             .catch { e ->
                 if (e is CancellationException) throw e
                 emit(Resource.Error(e.message ?: "Stream failed", e))
@@ -66,4 +61,9 @@ class ChatRepositoryImpl(
     override suspend fun clearConversation() {
         TODO("Room persistence implemented in 4.1.d.2")
     }
+}
+
+private fun SseEvent.toResource(): Resource<String> = when (this) {
+    is SseEvent.Token -> Resource.Success(text)
+    is SseEvent.Error -> Resource.Error("$code: $message")
 }
