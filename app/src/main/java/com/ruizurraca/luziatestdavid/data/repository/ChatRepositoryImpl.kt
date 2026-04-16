@@ -1,5 +1,8 @@
 package com.ruizurraca.luziatestdavid.data.repository
 
+import com.ruizurraca.luziatestdavid.data.local.dao.ChatMessageDao
+import com.ruizurraca.luziatestdavid.data.local.mapper.toDomain
+import com.ruizurraca.luziatestdavid.data.local.mapper.toEntity
 import com.ruizurraca.luziatestdavid.data.remote.api.L1ApiClient
 import com.ruizurraca.luziatestdavid.data.remote.mapper.ChatMapper
 import com.ruizurraca.luziatestdavid.data.remote.sse.SseEvent
@@ -20,6 +23,7 @@ class ChatRepositoryImpl(
     private val apiClient: L1ApiClient,
     private val sseParser: SseParser,
     private val chatMapper: ChatMapper,
+    private val dao: ChatMessageDao,
     private val ioDispatcher: CoroutineDispatcher
 ) : ChatRepository {
 
@@ -51,15 +55,20 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun saveMessage(message: ChatMessage) {
-        TODO("Room persistence implemented in 4.1.d.2")
+        withContext(ioDispatcher) {
+            dao.insert(message.toEntity())
+        }
     }
 
-    override fun observeConversation(): Flow<List<ChatMessage>> {
-        TODO("Room persistence implemented in 4.1.d.2")
-    }
+    override fun observeConversation(): Flow<List<ChatMessage>> =
+        dao.observeAll()
+            .map { entities -> entities.map { it.toDomain() } }
+            .flowOn(ioDispatcher)
 
     override suspend fun clearConversation() {
-        TODO("Room persistence implemented in 4.1.d.2")
+        withContext(ioDispatcher) {
+            dao.deleteAll()
+        }
     }
 }
 
