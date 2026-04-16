@@ -39,9 +39,9 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 ### Phase 4: Data Layer (TDD)
 *Goal: Implement the technical implementation of the domain interfaces.*
 
-- [ ] **4.1 RED (Tests):** Write failing tests for `SseParser`, `ChatMapper`, `L1ApiClient` (using `MockEngine`), and `ChatRepositoryImpl`.
-- [ ] **4.2 GREEN (Implementation):** Implement `SseParser`, `DTOs`, `Ktor Client`, `Room` entities/DAOs, and `ChatRepositoryImpl`.
-- [ ] **4.3 REFACTOR:** Finalize Hilt bindings (`@Binds`) and optimize `NetworkModule` (logging/interceptors).
+- [x] **4.1 RED (Tests):** Write failing tests for `SseParser`, `ChatMapper`, `L1ApiClient` (using `MockEngine`), and `ChatRepositoryImpl`.
+- [x] **4.2 GREEN (Implementation):** Implement `SseParser`, `DTOs`, `Ktor Client`, `Room` entities/DAOs, and `ChatRepositoryImpl`.
+- [x] **4.3 REFACTOR:** Finalize Hilt bindings (`@Binds`) and optimize `NetworkModule` (logging/interceptors).
 
 ### Phase 5: Presentation Layer (TDD)
 *Goal: Implement the UI, ViewModels, and State Management.*
@@ -72,3 +72,6 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 
 ### Phase 9: Documentation
 - [ ] 9.1 **README:** Complete the professional `README.md` (Design Decisions, Tech Stack, Setup).
+  - Include a **"Future Improvements / Next Steps"** section covering:
+    - **Room 2.x → Room 3.x migration:** Switch `androidx.room` → `androidx.room3` once 3.x reaches stable. Room 3 offers coroutine-first APIs (`withWriteTransaction`), the new `SQLiteDriver` surface, Kotlin Multiplatform support, and `@DaoReturnTypeConverters`. Deferred from Phase 4.3 because 3.x is alpha as of 2026-04-17; stability outweighs the upside for this build.
+    - (Additional items to capture as they arise during Phases 5–8.)
