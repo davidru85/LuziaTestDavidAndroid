@@ -32,9 +32,9 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 ### Phase 3: Domain Layer (TDD)
 *Goal: Implement the pure Kotlin business logic.*
 
-- [ ] **3.1 RED (Tests):** Write failing tests for `ChatMessage` model, `ChatRepository` interface, `TranscribeAudioUseCase`, and `SendMessageUseCase`.
-- [ ] **3.2 GREEN (Implementation):** Implement `ChatMessage`, `MessageRole`, `ChatRepository` (interface), and all `UseCases`.
-- [ ] **3.3 REFACTOR:** Ensure zero Android imports in `domain/` and verify `Resource<T>` utility.
+- [x] **3.1 RED (Tests):** Write failing tests for `ChatMessage` model, `ChatRepository` interface, `TranscribeAudioUseCase`, and `SendMessageUseCase`.
+- [x] **3.2 GREEN (Implementation):** Implement `ChatMessage`, `MessageRole`, `ChatRepository` (interface), and all `UseCases`.
+- [x] **3.3 REFACTOR:** Ensure zero Android imports in `domain/` and verify `Resource<T>` utility.
 
 ### Phase 4: Data Layer (TDD)
 *Goal: Implement the technical implementation of the domain interfaces.*
