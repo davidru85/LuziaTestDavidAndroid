@@ -1,11 +1,44 @@
 package com.ruizurraca.luziatestdavid.di
 
+import com.ruizurraca.luziatestdavid.BuildConfig
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.url
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    // Ktor HttpClient + BASE_URL wiring arrives in Phase 4 (data layer).
+
+    @Provides
+    @Singleton
+    fun provideJson(): Json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
+
+    @Provides
+    @Singleton
+    fun provideHttpClient(json: Json): HttpClient = HttpClient(OkHttp) {
+        expectSuccess = true
+        install(ContentNegotiation) {
+            json(json)
+        }
+        install(Logging) {
+            level = if (BuildConfig.DEBUG) LogLevel.BODY else LogLevel.NONE
+        }
+        defaultRequest {
+            url(BuildConfig.BASE_URL)
+        }
+    }
 }

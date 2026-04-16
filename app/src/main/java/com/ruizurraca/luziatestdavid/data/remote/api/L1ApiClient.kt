@@ -16,8 +16,11 @@ import io.ktor.http.contentType
 import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import javax.inject.Inject
 
-class L1ApiClient(private val httpClient: HttpClient) {
+class L1ApiClient @Inject constructor(
+    private val httpClient: HttpClient
+) {
 
     suspend fun transcribe(
         audio: ByteArray,

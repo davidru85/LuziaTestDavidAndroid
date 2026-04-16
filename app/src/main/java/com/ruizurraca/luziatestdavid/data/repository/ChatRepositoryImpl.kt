@@ -7,6 +7,7 @@ import com.ruizurraca.luziatestdavid.data.remote.api.L1ApiClient
 import com.ruizurraca.luziatestdavid.data.remote.mapper.ChatMapper
 import com.ruizurraca.luziatestdavid.data.remote.sse.SseEvent
 import com.ruizurraca.luziatestdavid.data.remote.sse.SseParser
+import com.ruizurraca.luziatestdavid.di.qualifier.IoDispatcher
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.repository.ChatRepository
@@ -18,13 +19,16 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class ChatRepositoryImpl(
+@Singleton
+class ChatRepositoryImpl @Inject constructor(
     private val apiClient: L1ApiClient,
     private val sseParser: SseParser,
     private val chatMapper: ChatMapper,
     private val dao: ChatMessageDao,
-    private val ioDispatcher: CoroutineDispatcher
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ChatRepository {
 
     override suspend fun transcribeAudio(audio: File): Resource<String> =

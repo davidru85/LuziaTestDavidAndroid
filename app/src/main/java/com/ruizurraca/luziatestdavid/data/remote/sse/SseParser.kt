@@ -6,11 +6,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.transformWhile
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
 
 @Serializable
 private data class ErrorPayload(val code: String, val message: String)
 
-class SseParser {
+class SseParser @Inject constructor() {
 
     fun parse(lines: Flow<String>): Flow<SseEvent> = flow {
         var eventType: String? = null
