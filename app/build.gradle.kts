@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -5,6 +7,15 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
 }
+
+val localProps = Properties().apply {
+    rootProject.file("local.properties").inputStream().use { load(it) }
+}
+
+fun requireLocalProp(key: String): String =
+    checkNotNull(localProps.getProperty(key)) {
+        "$key is missing from local.properties"
+    }
 
 android {
     namespace = "com.ruizurraca.luziatestdavid"
@@ -30,6 +41,27 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
+            )
+        }
+    }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"${requireLocalProp("BASE_URL_STAGING")}\""
+            )
+        }
+        create("production") {
+            dimension = "environment"
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"${requireLocalProp("BASE_URL_PRODUCTION")}\""
             )
         }
     }
