@@ -49,7 +49,7 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 - [x] **5.1 Theme:** Configure Material 3 `Color`, `Type`, and `Theme` (Dynamic Color support).
 - [x] **5.2 UI Models:** Implement `ChatUiState` (sealed interface) and `ChatMessageUiModel`.
 - [x] **5.3 ViewModels:** Write tests for `ChatViewModel` (State transitions: `Idle` $\rightarrow$ `Recording` $\rightarrow$ `Streaming`). Implement `ViewModel` logic.
-- [ ] **5.4 Components:** Implement `MessageBubble`, `RecordButton`, and `StreamingIndicator` (test via `ComposeTestRule`).
+- [x] **5.4 Components:** Implement `MessageBubble`, `RecordButton`, and `StreamingIndicator` (test via `ComposeTestRule`).
 - [ ] **5.5 Screen:** Implement `ChatScreen` (scaffold, `LazyColumn` auto-scroll, permission handling).
 
 ### Phase 6: Integration & Wiring
