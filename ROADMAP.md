@@ -46,7 +46,7 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 ### Phase 5: Presentation Layer (TDD)
 *Goal: Implement the UI, ViewModels, and State Management.*
 
-- [ ] **5.1 Theme:** Configure Material 3 `Color`, `Type`, and `Theme` (Dynamic Color support).
+- [x] **5.1 Theme:** Configure Material 3 `Color`, `Type`, and `Theme` (Dynamic Color support).
 - [ ] **5.2 UI Models:** Implement `ChatUiState` (sealed interface) and `ChatMessageUiModel`.
 - [ ] **5.3 ViewModels:** Write tests for `ChatViewModel` (State transitions: `Idle` $\rightarrow$ `Recording` $\rightarrow$ `Streaming`). Implement `ViewModel` logic.
 - [ ] **5.4 Components:** Implement `MessageBubble`, `RecordButton`, and `StreamingIndicator` (test via `ComposeTestRule`).
