@@ -18,7 +18,8 @@ sealed interface ChatUiState {
 
     data class Processing(
         override val messages: List<ChatMessageUiModel>,
-        override val draft: String
+        override val draft: String,
+        val kind: ProcessingKind
     ) : ChatUiState
 
     data class Streaming(
@@ -26,3 +27,5 @@ sealed interface ChatUiState {
         override val draft: String
     ) : ChatUiState
 }
+
+enum class ProcessingKind { TRANSCRIBING, AWAITING_REPLY }

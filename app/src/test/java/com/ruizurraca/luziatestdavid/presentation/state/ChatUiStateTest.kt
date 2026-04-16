@@ -42,11 +42,29 @@ class ChatUiStateTest {
     }
 
     @Test
-    fun `Processing state exposes messages and draft`() {
-        val state = ChatUiState.Processing(messages = sampleMessages, draft = "partial")
+    fun `Processing(TRANSCRIBING) exposes messages, draft, and kind`() {
+        val state = ChatUiState.Processing(
+            messages = sampleMessages,
+            draft = "partial",
+            kind = ProcessingKind.TRANSCRIBING
+        )
 
         assertSame(sampleMessages, state.messages)
         assertEquals("partial", state.draft)
+        assertEquals(ProcessingKind.TRANSCRIBING, state.kind)
+    }
+
+    @Test
+    fun `Processing(AWAITING_REPLY) exposes messages, draft, and kind`() {
+        val state = ChatUiState.Processing(
+            messages = sampleMessages,
+            draft = "",
+            kind = ProcessingKind.AWAITING_REPLY
+        )
+
+        assertSame(sampleMessages, state.messages)
+        assertEquals("", state.draft)
+        assertEquals(ProcessingKind.AWAITING_REPLY, state.kind)
     }
 
     @Test
@@ -62,7 +80,7 @@ class ChatUiStateTest {
         val states: List<ChatUiState> = listOf(
             ChatUiState.Idle(),
             ChatUiState.Listening(emptyList(), ""),
-            ChatUiState.Processing(emptyList(), ""),
+            ChatUiState.Processing(emptyList(), "", ProcessingKind.TRANSCRIBING),
             ChatUiState.Streaming(emptyList(), "")
         )
         assertEquals(4, states.size)
