@@ -178,13 +178,6 @@ class ChatRepositoryImplTest {
     fun `observeConversation maps entities to domain preserving all roles and statuses`() = runTest(dispatcher) {
         val entities = listOf(
             ChatMessageEntity(
-                id = "s",
-                role = "system",
-                content = "You are helpful.",
-                timestamp = 0L,
-                status = "DELIVERED"
-            ),
-            ChatMessageEntity(
                 id = "u",
                 role = "user",
                 content = "Hello",
@@ -203,17 +196,14 @@ class ChatRepositoryImplTest {
 
         repository.observeConversation().test {
             val messages = awaitItem()
-            assertEquals(3, messages.size)
+            assertEquals(2, messages.size)
 
-            assertEquals(MessageRole.SYSTEM, messages[0].role)
-            assertEquals(MessageStatus.DELIVERED, messages[0].status)
-            assertEquals("You are helpful.", messages[0].content)
+            assertEquals(MessageRole.USER, messages[0].role)
+            assertEquals(MessageStatus.PENDING, messages[0].status)
+            assertEquals("Hello", messages[0].content)
 
-            assertEquals(MessageRole.USER, messages[1].role)
-            assertEquals(MessageStatus.PENDING, messages[1].status)
-
-            assertEquals(MessageRole.ASSISTANT, messages[2].role)
-            assertEquals(MessageStatus.FAILED, messages[2].status)
+            assertEquals(MessageRole.ASSISTANT, messages[1].role)
+            assertEquals(MessageStatus.FAILED, messages[1].status)
 
             awaitComplete()
         }

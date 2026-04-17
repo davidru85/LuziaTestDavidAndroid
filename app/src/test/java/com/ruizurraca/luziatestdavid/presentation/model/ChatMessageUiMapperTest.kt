@@ -4,7 +4,6 @@ import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.model.MessageRole
 import com.ruizurraca.luziatestdavid.domain.model.MessageStatus
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ChatMessageUiMapperTest {
@@ -90,18 +89,6 @@ class ChatMessageUiMapperTest {
 
         val assistant = result.single() as ChatMessageUiModel.Assistant
         assertEquals(AssistantStreamState.FAILED, assistant.streamState)
-    }
-
-    @Test
-    fun `system messages are filtered out`() {
-        val result = listOf(
-            message(id = "sys", role = MessageRole.SYSTEM, content = "Pretend you are a poet."),
-            message(id = "u", role = MessageRole.USER, content = "hi")
-        ).toUiModels()
-
-        assertEquals(1, result.size)
-        assertEquals("u", result.single().id)
-        assertTrue(result.single() is ChatMessageUiModel.User)
     }
 
     @Test

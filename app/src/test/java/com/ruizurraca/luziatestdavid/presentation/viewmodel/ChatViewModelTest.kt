@@ -110,20 +110,6 @@ class ChatViewModelTest {
         assertEquals("a1", messages[1].id)
     }
 
-    @Test
-    fun `system messages from observeConversation are filtered out of state`() = runTest {
-        val vm = createViewModel()
-
-        conversation.value = listOf(
-            ChatMessage("sys", MessageRole.SYSTEM, "persona prompt", 1L, MessageStatus.DELIVERED),
-            userMessage(id = "u1")
-        )
-
-        val messages = vm.state.value.messages
-        assertEquals(1, messages.size)
-        assertEquals("u1", messages[0].id)
-    }
-
     // ----- Draft -------------------------------------------------------------
 
     @Test

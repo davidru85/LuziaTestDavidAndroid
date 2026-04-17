@@ -20,7 +20,6 @@ private fun ChatMessage.toUiModelOrNull(): ChatMessageUiModel? = when (role) {
         content = content,
         streamState = toAssistantStreamState()
     )
-    MessageRole.SYSTEM -> null
 }
 
 private fun MessageStatus.toUserDeliveryState(): UserDeliveryState = when (this) {

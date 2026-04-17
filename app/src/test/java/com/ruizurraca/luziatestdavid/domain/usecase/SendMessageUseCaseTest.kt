@@ -21,7 +21,7 @@ class SendMessageUseCaseTest {
     private val useCase = SendMessageUseCase(repository)
 
     private val history = listOf(
-        ChatMessage("sys", MessageRole.SYSTEM, "You are helpful.", 0L),
+        ChatMessage("u0", MessageRole.USER, "Context message", 0L),
         ChatMessage("u1", MessageRole.USER, "Hi", 1L)
     )
 
