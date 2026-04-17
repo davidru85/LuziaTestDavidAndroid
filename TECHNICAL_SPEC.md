@@ -18,7 +18,7 @@ To maintain testability and separation of concerns, the following rules must be 
 ---
 
 ## 📡 API Contracts
-**Base URL:** `http://10.0.2.2:8000` (Configured via `local.properties` $\rightarrow$ `BuildConfig`).
+**Base URL:** `http://127.0.0.1:8000` (Configured via `local.properties` $\rightarrow$ `BuildConfig`).
 
 ### 1. POST `/transcribe` (Audio to Text)
 *   **Content-Type:** `multipart/form-data`

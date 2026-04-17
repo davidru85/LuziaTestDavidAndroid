@@ -31,8 +31,8 @@ jobs:
       - name: Generate local.properties (CI dummy values)
         run: |
           cat > local.properties <<'EOF'
-          BASE_URL_STAGING=http://10.0.2.2:8000
-          BASE_URL_PRODUCTION=http://10.0.2.2:8000
+          BASE_URL_STAGING=http://127.0.0.1:8000
+          BASE_URL_PRODUCTION=http://127.0.0.1:8000
           EOF
 
       - name: Make gradlew executable
