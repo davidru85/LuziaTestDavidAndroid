@@ -54,7 +54,7 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
     - [x] **5.5.A** Domain refactor: drop `MessageRole.SYSTEM`; add `personaPrompt: String?` to `ChatMessage`.
     - [x] **5.5.B** Data refactor: destructive Room DB bump; `ChatMapper` emits per-message `role` (persona prompt for user, `"assistant"` for assistant).
     - [x] **5.5.C** Persona catalog: `strings.xml` arrays + `Persona` enum + `PersonaCatalog` (domain interface, data impl).
-    - [ ] **5.5.D** `ChatRepository.deleteMessage(id)` + DAO.
+    - [x] **5.5.D** `ChatRepository.deleteMessage(id)` + DAO.
     - [ ] **5.5.E** VM extensions: `selectedPersona`, `onPersonaSelected`, `onRetryLastFailure`; `onSendTap` attaches active `personaPrompt`.
     - [ ] **5.5.F** `RoleSelectorChips` component.
     - [ ] **5.5.G** `AssistantMessageBubble` retry button.
