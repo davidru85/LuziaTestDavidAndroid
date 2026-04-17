@@ -4,9 +4,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.ruizurraca.luziatestdavid.presentation.model.AssistantStreamState
 import com.ruizurraca.luziatestdavid.presentation.model.ChatMessageUiModel
 import com.ruizurraca.luziatestdavid.presentation.theme.LuziaTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,10 +31,13 @@ class AssistantMessageBubbleTest {
         streamState = streamState
     )
 
-    private fun setBubble(model: ChatMessageUiModel.Assistant) {
+    private fun setBubble(
+        model: ChatMessageUiModel.Assistant,
+        onRetry: (() -> Unit)? = null
+    ) {
         composeTestRule.setContent {
             LuziaTheme {
-                AssistantMessageBubble(model = model)
+                AssistantMessageBubble(model = model, onRetry = onRetry)
             }
         }
     }
@@ -90,5 +95,76 @@ class AssistantMessageBubbleTest {
 
         composeTestRule.onNodeWithContentDescription("Reply failed").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("Loading response").assertDoesNotExist()
+    }
+
+    // ----- Retry button (Phase 5.5.G, MEMORY.md Fork 2) -----------------------
+
+    @Test
+    fun failed_withOnRetry_showsRetryButton() {
+        setBubble(
+            model = assistant(streamState = AssistantStreamState.FAILED),
+            onRetry = {}
+        )
+
+        composeTestRule.onNodeWithContentDescription("Retry reply").assertIsDisplayed()
+    }
+
+    @Test
+    fun failed_withoutOnRetry_hidesRetryButton() {
+        setBubble(
+            model = assistant(streamState = AssistantStreamState.FAILED),
+            onRetry = null
+        )
+
+        composeTestRule.onNodeWithContentDescription("Retry reply").assertDoesNotExist()
+    }
+
+    @Test
+    fun received_withOnRetry_hidesRetryButton() {
+        setBubble(
+            model = assistant(
+                content = "Hola",
+                streamState = AssistantStreamState.RECEIVED
+            ),
+            onRetry = {}
+        )
+
+        composeTestRule.onNodeWithContentDescription("Retry reply").assertDoesNotExist()
+    }
+
+    @Test
+    fun loading_withOnRetry_hidesRetryButton() {
+        setBubble(
+            model = assistant(streamState = AssistantStreamState.LOADING),
+            onRetry = {}
+        )
+
+        composeTestRule.onNodeWithContentDescription("Retry reply").assertDoesNotExist()
+    }
+
+    @Test
+    fun streaming_withOnRetry_hidesRetryButton() {
+        setBubble(
+            model = assistant(
+                content = "partial",
+                streamState = AssistantStreamState.STREAMING
+            ),
+            onRetry = {}
+        )
+
+        composeTestRule.onNodeWithContentDescription("Retry reply").assertDoesNotExist()
+    }
+
+    @Test
+    fun clickingRetry_invokesCallback_once() {
+        var retries = 0
+        setBubble(
+            model = assistant(streamState = AssistantStreamState.FAILED),
+            onRetry = { retries++ }
+        )
+
+        composeTestRule.onNodeWithContentDescription("Retry reply").performClick()
+
+        assertEquals(1, retries)
     }
 }
