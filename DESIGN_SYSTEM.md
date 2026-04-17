@@ -23,7 +23,16 @@ A single `ConversationScreen` with four vertical zones:
 *   **Type:** `FilterChip` (Horizontal Scroll).
 *   **Selection Mode:** `SingleSelect`.
 *   **Visuals:** Selected state uses `primaryContainer` fill + leading checkmark.
-*   **Logic:** Selected role must be injected as a `system` message at index 0 of the chat history.
+*   **Personas:** Exactly three, declared in `res/values/strings.xml` as parallel string arrays `role_names` and `role_prompts` (indexes correspond 1:1):
+    *   **Student** — *"You are a patient, educational tutor. Explain concepts step by step and encourage learning."*
+    *   **Scientist** — *"You are a rigorous scientist. Provide evidence-based, analytical, and precise answers."*
+    *   **Artist** — *"You are a creative artist. Think imaginatively, brainstorm ideas, and inspire creativity."*
+*   **Default persona:** Student (index 0) on app launch.
+*   **Logic — per-message persona capture:**
+    *   **No `system` message is ever inserted** at index 0 of the history. The `system` role is removed from the domain model.
+    *   When a **user** message is created, the persona prompt active at that moment is captured and becomes the message's serialized `role` field.
+    *   Assistant messages continue to serialize with `"role": "assistant"`.
+    *   Changing the persona mid-conversation affects only **subsequent** user messages; historical user messages retain the persona that was active when they were sent.
 
 ### 3. Message Bubbles (The Core Component)
 All messages are **text-only**. No audio players or waveforms.
