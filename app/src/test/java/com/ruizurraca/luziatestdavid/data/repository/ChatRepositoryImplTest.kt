@@ -218,5 +218,80 @@ class ChatRepositoryImplTest {
         coVerify { dao.deleteAll() }
     }
 
+    // ----- Per-message persona (Phase 5.5.B, MEMORY.md Fork 1) ----------------
+
+    @Test
+    fun `saveMessage persists personaPrompt for user messages`() = runTest(dispatcher) {
+        val prompt = "You are a patient, educational tutor. " +
+            "Explain concepts step by step and encourage learning."
+        val message = ChatMessage(
+            id = "u1",
+            role = MessageRole.USER,
+            content = "How does photosynthesis work?",
+            timestamp = 1_000L,
+            status = MessageStatus.DELIVERED,
+            personaPrompt = prompt
+        )
+        coEvery { dao.insert(any()) } returns Unit
+
+        repository.saveMessage(message)
+
+        coVerify {
+            dao.insert(
+                ChatMessageEntity(
+                    id = "u1",
+                    role = "user",
+                    content = "How does photosynthesis work?",
+                    timestamp = 1_000L,
+                    status = "DELIVERED",
+                    personaPrompt = prompt
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `observeConversation round-trips personaPrompt from entity to domain`() = runTest(dispatcher) {
+        val tutor = "You are a patient, educational tutor."
+        val artist = "You are a creative artist."
+
+        val entities = listOf(
+            ChatMessageEntity(
+                id = "u1",
+                role = "user",
+                content = "Explain gravity",
+                timestamp = 1L,
+                status = "DELIVERED",
+                personaPrompt = tutor
+            ),
+            ChatMessageEntity(
+                id = "a1",
+                role = "assistant",
+                content = "Gravity is…",
+                timestamp = 2L,
+                status = "DELIVERED",
+                personaPrompt = null
+            ),
+            ChatMessageEntity(
+                id = "u2",
+                role = "user",
+                content = "Now as a poem",
+                timestamp = 3L,
+                status = "DELIVERED",
+                personaPrompt = artist
+            )
+        )
+        every { dao.observeAll() } returns flowOf(entities)
+
+        repository.observeConversation().test {
+            val messages = awaitItem()
+            assertEquals(3, messages.size)
+            assertEquals(tutor, messages[0].personaPrompt)
+            assertEquals(null, messages[1].personaPrompt)
+            assertEquals(artist, messages[2].personaPrompt)
+            awaitComplete()
+        }
+    }
+
     // endregion
 }

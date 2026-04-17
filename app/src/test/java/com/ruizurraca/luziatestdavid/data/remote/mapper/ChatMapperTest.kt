@@ -107,4 +107,106 @@ class ChatMapperTest {
 
         assertEquals("""{"messages":[{"role":"user","content":"hi"}]}""", json)
     }
+
+    // ----- Per-message persona capture (Phase 5.5.B, MEMORY.md Fork 1) ---------
+
+    @Test
+    fun `toRequestDto emits persona prompt as role for user messages`() {
+        val prompt = "You are a patient, educational tutor. " +
+            "Explain concepts step by step and encourage learning."
+        val messages = listOf(
+            ChatMessage(
+                id = "u1",
+                role = MessageRole.USER,
+                content = "How does photosynthesis work?",
+                timestamp = 1L,
+                personaPrompt = prompt
+            )
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals(prompt, dto.messages.single().role)
+        assertEquals("How does photosynthesis work?", dto.messages.single().content)
+    }
+
+    @Test
+    fun `toRequestDto emits assistant wire string for assistant messages regardless of personaPrompt`() {
+        val messages = listOf(
+            ChatMessage(
+                id = "a1",
+                role = MessageRole.ASSISTANT,
+                content = "La fotosíntesis es…",
+                timestamp = 2L,
+                personaPrompt = "ignored for assistants"
+            )
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals("assistant", dto.messages.single().role)
+    }
+
+    @Test
+    fun `toRequestDto falls back to user wire string when personaPrompt is null`() {
+        val messages = listOf(
+            ChatMessage(
+                id = "u1",
+                role = MessageRole.USER,
+                content = "Hello",
+                timestamp = 1L,
+                personaPrompt = null
+            )
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals("user", dto.messages.single().role)
+    }
+
+    @Test
+    fun `toRequestDto captures different personas per user message across a conversation`() {
+        val tutor = "You are a patient, educational tutor. " +
+            "Explain concepts step by step and encourage learning."
+        val artist = "You are a creative artist. " +
+            "Think imaginatively, brainstorm ideas, and inspire creativity."
+
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "¿Cómo funciona la fotosíntesis?", 1L, personaPrompt = tutor),
+            ChatMessage("a1", MessageRole.ASSISTANT, "La fotosíntesis es…", 2L),
+            ChatMessage("u2", MessageRole.USER, "Ahora escríbelo como un poema", 3L, personaPrompt = artist)
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals(
+            listOf(tutor, "assistant", artist),
+            dto.messages.map { it.role }
+        )
+    }
+
+    @Test
+    fun `toRequestDto matches the TECHNICAL_SPEC example JSON shape`() {
+        val tutor = "You are a patient, educational tutor. " +
+            "Explain concepts step by step and encourage learning."
+        val artist = "You are a creative artist. " +
+            "Think imaginatively, brainstorm ideas, and inspire creativity."
+
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "¿Cómo funciona la fotosíntesis?", 1L, personaPrompt = tutor),
+            ChatMessage("a1", MessageRole.ASSISTANT, "La fotosíntesis es…", 2L),
+            ChatMessage("u2", MessageRole.USER, "Ahora escríbelo como un poema", 3L, personaPrompt = artist)
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        val expected = ChatRequestDto(
+            listOf(
+                ChatMessageDto(role = tutor, content = "¿Cómo funciona la fotosíntesis?"),
+                ChatMessageDto(role = "assistant", content = "La fotosíntesis es…"),
+                ChatMessageDto(role = artist, content = "Ahora escríbelo como un poema")
+            )
+        )
+        assertEquals(expected, dto)
+    }
 }
