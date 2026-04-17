@@ -2,10 +2,13 @@ package com.ruizurraca.luziatestdavid.presentation.viewmodel
 
 import app.cash.turbine.test
 import com.ruizurraca.luziatestdavid.domain.audio.AudioRecorder
+import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.model.MessageRole
 import com.ruizurraca.luziatestdavid.domain.model.MessageStatus
+import com.ruizurraca.luziatestdavid.domain.model.Persona
+import com.ruizurraca.luziatestdavid.domain.model.PersonaEntry
 import com.ruizurraca.luziatestdavid.domain.repository.ChatRepository
 import com.ruizurraca.luziatestdavid.domain.usecase.StreamAssistantReplyUseCase
 import com.ruizurraca.luziatestdavid.domain.usecase.TranscribeAudioUseCase
@@ -42,8 +45,22 @@ class ChatViewModelTest {
     private val transcribeAudio: TranscribeAudioUseCase = mockk()
     private val streamAssistantReply: StreamAssistantReplyUseCase = mockk()
     private val repository: ChatRepository = mockk()
+    private val personaCatalog: PersonaCatalog = mockk()
 
     private val conversation = MutableStateFlow<List<ChatMessage>>(emptyList())
+
+    private val tutorPrompt = "You are a patient, educational tutor. " +
+        "Explain concepts step by step and encourage learning."
+    private val scientistPrompt = "You are a rigorous scientist. " +
+        "Provide evidence-based, analytical, and precise answers."
+    private val artistPrompt = "You are a creative artist. " +
+        "Think imaginatively, brainstorm ideas, and inspire creativity."
+
+    private val personaEntries = listOf(
+        PersonaEntry(Persona.STUDENT, "Student", tutorPrompt),
+        PersonaEntry(Persona.SCIENTIST, "Scientist", scientistPrompt),
+        PersonaEntry(Persona.ARTIST, "Artist", artistPrompt)
+    )
 
     private fun userMessage(
         id: String = "u1",
@@ -57,12 +74,26 @@ class ChatViewModelTest {
         status = status
     )
 
+    private fun assistantMessage(
+        id: String = "a1",
+        content: String = "¡Hola!",
+        status: MessageStatus = MessageStatus.DELIVERED
+    ) = ChatMessage(
+        id = id,
+        role = MessageRole.ASSISTANT,
+        content = content,
+        timestamp = 2_000L,
+        status = status
+    )
+
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         every { repository.observeConversation() } returns conversation
         coEvery { repository.saveMessage(any()) } just Runs
+        coEvery { repository.deleteMessage(any()) } just Runs
         coEvery { repository.clearConversation() } just Runs
+        every { personaCatalog.entries() } returns personaEntries
     }
 
     @AfterEach
@@ -74,7 +105,8 @@ class ChatViewModelTest {
         audioRecorder = audioRecorder,
         transcribeAudio = transcribeAudio,
         streamAssistantReply = streamAssistantReply,
-        repository = repository
+        repository = repository,
+        personaCatalog = personaCatalog
     )
 
     // ----- Initial state & observation ---------------------------------------
@@ -271,5 +303,146 @@ class ChatViewModelTest {
         vm.onClearConversation()
 
         coVerify(exactly = 1) { repository.clearConversation() }
+    }
+
+    // ----- Persona selection (Phase 5.5.E, MEMORY.md Fork 1) -----------------
+
+    @Test
+    fun `selectedPersona defaults to STUDENT`() = runTest {
+        val vm = createViewModel()
+
+        assertEquals(Persona.STUDENT, vm.selectedPersona.value)
+    }
+
+    @Test
+    fun `onPersonaSelected updates selectedPersona`() = runTest {
+        val vm = createViewModel()
+
+        vm.onPersonaSelected(Persona.ARTIST)
+
+        assertEquals(Persona.ARTIST, vm.selectedPersona.value)
+    }
+
+    @Test
+    fun `onPersonaSelected accepts every Persona value`() = runTest {
+        val vm = createViewModel()
+
+        vm.onPersonaSelected(Persona.SCIENTIST)
+        assertEquals(Persona.SCIENTIST, vm.selectedPersona.value)
+
+        vm.onPersonaSelected(Persona.ARTIST)
+        assertEquals(Persona.ARTIST, vm.selectedPersona.value)
+
+        vm.onPersonaSelected(Persona.STUDENT)
+        assertEquals(Persona.STUDENT, vm.selectedPersona.value)
+    }
+
+    // ----- Per-message persona capture on send --------------------------------
+
+    @Test
+    fun `onSendTap attaches the default persona prompt on first send`() = runTest {
+        every { streamAssistantReply(any()) } returns flowOf(Resource.Success(Unit))
+
+        val vm = createViewModel()
+        vm.onDraftChange("hola")
+
+        vm.onSendTap()
+
+        coVerify(exactly = 1) {
+            repository.saveMessage(match {
+                it.role == MessageRole.USER && it.personaPrompt == tutorPrompt
+            })
+        }
+    }
+
+    @Test
+    fun `onSendTap attaches the currently selected persona prompt`() = runTest {
+        every { streamAssistantReply(any()) } returns flowOf(Resource.Success(Unit))
+
+        val vm = createViewModel()
+        vm.onPersonaSelected(Persona.ARTIST)
+        vm.onDraftChange("escríbelo como un poema")
+
+        vm.onSendTap()
+
+        coVerify(exactly = 1) {
+            repository.saveMessage(match {
+                it.role == MessageRole.USER && it.personaPrompt == artistPrompt
+            })
+        }
+    }
+
+    @Test
+    fun `changing persona mid-conversation affects only subsequent user messages`() = runTest {
+        every { streamAssistantReply(any()) } returns flowOf(Resource.Success(Unit))
+
+        val vm = createViewModel()
+
+        // First send under STUDENT default.
+        vm.onDraftChange("pregunta 1")
+        vm.onSendTap()
+
+        // Switch persona, send again.
+        vm.onPersonaSelected(Persona.ARTIST)
+        vm.onDraftChange("pregunta 2")
+        vm.onSendTap()
+
+        coVerify(exactly = 1) {
+            repository.saveMessage(match {
+                it.content == "pregunta 1" && it.personaPrompt == tutorPrompt
+            })
+        }
+        coVerify(exactly = 1) {
+            repository.saveMessage(match {
+                it.content == "pregunta 2" && it.personaPrompt == artistPrompt
+            })
+        }
+    }
+
+    // ----- Retry flow (Phase 5.5.E, MEMORY.md Fork 2) -------------------------
+
+    @Test
+    fun `onRetryLastFailure deletes the FAILED assistant and re-streams cleaned history`() = runTest {
+        every { streamAssistantReply(any()) } returns flowOf(Resource.Success(Unit))
+
+        val user = userMessage(id = "u1", content = "¿Cómo funciona la fotosíntesis?")
+        val failed = assistantMessage(id = "a-failed", content = "", status = MessageStatus.FAILED)
+        conversation.value = listOf(user, failed)
+
+        val vm = createViewModel()
+
+        vm.onRetryLastFailure()
+
+        coVerify(exactly = 1) { repository.deleteMessage("a-failed") }
+        coVerify(exactly = 1) {
+            streamAssistantReply(match { history ->
+                history.size == 1 && history.single().id == "u1"
+            })
+        }
+    }
+
+    @Test
+    fun `onRetryLastFailure is a no-op when conversation is empty`() = runTest {
+        val vm = createViewModel()
+
+        vm.onRetryLastFailure()
+
+        coVerify(exactly = 0) { repository.deleteMessage(any()) }
+        coVerify(exactly = 0) { streamAssistantReply(any()) }
+    }
+
+    @Test
+    fun `onRetryLastFailure is a no-op when no FAILED assistant is present`() = runTest {
+        conversation.value = listOf(
+            userMessage(id = "u1"),
+            assistantMessage(id = "a1", status = MessageStatus.DELIVERED)
+        )
+
+        val vm = createViewModel()
+
+        vm.onRetryLastFailure()
+
+        coVerify(exactly = 0) { repository.deleteMessage(any()) }
+        coVerify(exactly = 0) { streamAssistantReply(any()) }
     }
 }
