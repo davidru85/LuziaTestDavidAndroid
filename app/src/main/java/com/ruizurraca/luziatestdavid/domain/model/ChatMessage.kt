@@ -5,5 +5,6 @@ data class ChatMessage(
     val role: MessageRole,
     val content: String,
     val timestamp: Long,
-    val status: MessageStatus = MessageStatus.DELIVERED
+    val status: MessageStatus = MessageStatus.DELIVERED,
+    val personaPrompt: String? = null
 )

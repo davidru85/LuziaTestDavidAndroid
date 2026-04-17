@@ -22,7 +22,9 @@ object DatabaseModule {
             context,
             LuziaDatabase::class.java,
             "luzia.db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
 
     @Provides
     @Singleton

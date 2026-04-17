@@ -26,3 +26,4 @@ local.properties
 .vscode/settings.json
 .idea/deviceManager.xml
 .idea/androidTestResultsUserPreferences.xml
+.idea/markdown.xml
