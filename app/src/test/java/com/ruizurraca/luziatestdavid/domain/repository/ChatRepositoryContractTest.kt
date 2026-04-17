@@ -27,6 +27,8 @@ class ChatRepositoryContractTest {
 
         override suspend fun saveMessage(message: ChatMessage) = Unit
 
+        override suspend fun deleteMessage(id: String) = Unit
+
         override fun observeConversation(): Flow<List<ChatMessage>> =
             flowOf(emptyList())
 
@@ -54,5 +56,10 @@ class ChatRepositoryContractTest {
     fun `observeConversation emits message lists`() = runTest {
         val emissions = fake.observeConversation().toList()
         assertEquals(listOf(emptyList<ChatMessage>()), emissions)
+    }
+
+    @Test
+    fun `deleteMessage is a suspend function accepting a message id`() = runTest {
+        fake.deleteMessage("msg-1")
     }
 }

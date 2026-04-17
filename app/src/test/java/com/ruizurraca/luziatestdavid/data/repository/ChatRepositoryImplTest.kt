@@ -218,6 +218,15 @@ class ChatRepositoryImplTest {
         coVerify { dao.deleteAll() }
     }
 
+    @Test
+    fun `deleteMessage delegates to dao delete with the given id`() = runTest(dispatcher) {
+        coEvery { dao.delete("msg-42") } returns Unit
+
+        repository.deleteMessage("msg-42")
+
+        coVerify { dao.delete("msg-42") }
+    }
+
     // ----- Per-message persona (Phase 5.5.B, MEMORY.md Fork 1) ----------------
 
     @Test
