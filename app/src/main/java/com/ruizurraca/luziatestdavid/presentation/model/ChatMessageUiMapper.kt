@@ -5,9 +5,9 @@ import com.ruizurraca.luziatestdavid.domain.model.MessageRole
 import com.ruizurraca.luziatestdavid.domain.model.MessageStatus
 
 fun List<ChatMessage>.toUiModels(): List<ChatMessageUiModel> =
-    mapNotNull { it.toUiModelOrNull() }
+    map { it.toUiModel() }
 
-private fun ChatMessage.toUiModelOrNull(): ChatMessageUiModel? = when (role) {
+private fun ChatMessage.toUiModel(): ChatMessageUiModel = when (role) {
     MessageRole.USER -> ChatMessageUiModel.User(
         id = id,
         timestamp = timestamp,
