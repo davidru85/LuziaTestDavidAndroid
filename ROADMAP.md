@@ -59,7 +59,7 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
     - [x] **5.5.F** `RoleSelectorChips` component.
     - [x] **5.5.G** `AssistantMessageBubble` retry button.
     - [x] **5.5.H** `ChatInputBar` composite.
-    - [ ] **5.5.I** `ChatTopAppBar` + DeleteSweep confirm dialog.
+    - [x] **5.5.I** `ChatTopAppBar` + DeleteSweep confirm dialog.
     - [ ] **5.5.J** `ChatScreen` scaffold + auto-scroll + Snackbar + `RECORD_AUDIO` permission launcher (absorbs Phase 6.2).
     - [ ] **5.5.K** Wire `ChatScreen` into `MainActivity`; device smoke test (absorbs Phase 6.1).
 
