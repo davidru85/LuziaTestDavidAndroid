@@ -3,10 +3,12 @@ package com.ruizurraca.luziatestdavid.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ruizurraca.luziatestdavid.domain.audio.AudioRecorder
+import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.model.MessageRole
 import com.ruizurraca.luziatestdavid.domain.model.MessageStatus
+import com.ruizurraca.luziatestdavid.domain.model.Persona
 import com.ruizurraca.luziatestdavid.domain.repository.ChatRepository
 import com.ruizurraca.luziatestdavid.domain.usecase.StreamAssistantReplyUseCase
 import com.ruizurraca.luziatestdavid.domain.usecase.TranscribeAudioUseCase
@@ -15,12 +17,14 @@ import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
 import com.ruizurraca.luziatestdavid.presentation.state.ProcessingKind
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -32,7 +36,8 @@ class ChatViewModel @Inject constructor(
     private val audioRecorder: AudioRecorder,
     private val transcribeAudio: TranscribeAudioUseCase,
     private val streamAssistantReply: StreamAssistantReplyUseCase,
-    private val repository: ChatRepository
+    private val repository: ChatRepository,
+    private val personaCatalog: PersonaCatalog
 ) : ViewModel() {
 
     private sealed interface Phase {
@@ -45,6 +50,9 @@ class ChatViewModel @Inject constructor(
     private val domainMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     private val phase = MutableStateFlow<Phase>(Phase.Idle)
     private val draft = MutableStateFlow("")
+
+    private val _selectedPersona = MutableStateFlow(Persona.STUDENT)
+    val selectedPersona: StateFlow<Persona> = _selectedPersona.asStateFlow()
 
     private val _events = MutableSharedFlow<ChatEvent>(extraBufferCapacity = 8)
     val events: SharedFlow<ChatEvent> = _events.asSharedFlow()
@@ -111,7 +119,8 @@ class ChatViewModel @Inject constructor(
             role = MessageRole.USER,
             content = currentDraft,
             timestamp = System.currentTimeMillis(),
-            status = MessageStatus.DELIVERED
+            status = MessageStatus.DELIVERED,
+            personaPrompt = activePersonaPrompt()
         )
 
         viewModelScope.launch {
@@ -120,16 +129,28 @@ class ChatViewModel @Inject constructor(
             draft.value = ""
             phase.value = Phase.Processing(ProcessingKind.AWAITING_REPLY)
 
-            streamAssistantReply(historySnapshot + userMsg).collect { resource ->
-                when (resource) {
-                    is Resource.Success -> phase.value = Phase.Streaming
-                    is Resource.Error -> {
-                        _events.tryEmit(ChatEvent.Error(resource.message))
-                        phase.value = Phase.Idle
-                    }
-                }
-            }
-            phase.value = Phase.Idle
+            consumeAssistantStream(streamAssistantReply(historySnapshot + userMsg))
+        }
+    }
+
+    fun onPersonaSelected(persona: Persona) {
+        _selectedPersona.value = persona
+    }
+
+    fun onRetryLastFailure() {
+        val snapshot = domainMessages.value
+        val failedIndex = snapshot.indexOfLast {
+            it.role == MessageRole.ASSISTANT && it.status == MessageStatus.FAILED
+        }
+        if (failedIndex < 0) return
+
+        val failedId = snapshot[failedIndex].id
+        val cleaned = snapshot.toMutableList().apply { removeAt(failedIndex) }
+
+        viewModelScope.launch {
+            repository.deleteMessage(failedId)
+            phase.value = Phase.Processing(ProcessingKind.AWAITING_REPLY)
+            consumeAssistantStream(streamAssistantReply(cleaned))
         }
     }
 
@@ -137,5 +158,21 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             repository.clearConversation()
         }
+    }
+
+    private fun activePersonaPrompt(): String =
+        personaCatalog.entries().first { it.persona == _selectedPersona.value }.prompt
+
+    private suspend fun consumeAssistantStream(stream: Flow<Resource<Unit>>) {
+        stream.collect { resource ->
+            when (resource) {
+                is Resource.Success -> phase.value = Phase.Streaming
+                is Resource.Error -> {
+                    _events.tryEmit(ChatEvent.Error(resource.message))
+                    phase.value = Phase.Idle
+                }
+            }
+        }
+        phase.value = Phase.Idle
     }
 }
