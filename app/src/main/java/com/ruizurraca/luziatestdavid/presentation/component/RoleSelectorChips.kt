@@ -1,5 +1,6 @@
 package com.ruizurraca.luziatestdavid.presentation.component
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
@@ -17,9 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ruizurraca.luziatestdavid.domain.model.Persona
 import com.ruizurraca.luziatestdavid.domain.model.PersonaEntry
+import com.ruizurraca.luziatestdavid.presentation.theme.LuziaTheme
 
 @Composable
 fun RoleSelectorChips(
@@ -51,5 +54,51 @@ fun RoleSelectorChips(
                 modifier = Modifier.semantics { role = Role.RadioButton }
             )
         }
+    }
+}
+
+private fun previewPersonaEntries(): List<PersonaEntry> = listOf(
+    PersonaEntry(Persona.STUDENT, "Student", "tutor prompt"),
+    PersonaEntry(Persona.SCIENTIST, "Scientist", "scientist prompt"),
+    PersonaEntry(Persona.ARTIST, "Artist", "artist prompt")
+)
+
+@Preview(showBackground = true, name = "Light — Student selected")
+@Composable
+private fun RoleSelectorChipsPreview_StudentSelected() {
+    LuziaTheme {
+        RoleSelectorChips(
+            entries = previewPersonaEntries(),
+            selectedPersona = Persona.STUDENT,
+            onPersonaSelected = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Light — Artist selected")
+@Composable
+private fun RoleSelectorChipsPreview_ArtistSelected() {
+    LuziaTheme {
+        RoleSelectorChips(
+            entries = previewPersonaEntries(),
+            selectedPersona = Persona.ARTIST,
+            onPersonaSelected = {}
+        )
+    }
+}
+
+@Preview(
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    name = "Dark — Student selected"
+)
+@Composable
+private fun RoleSelectorChipsPreview_DarkStudent() {
+    LuziaTheme {
+        RoleSelectorChips(
+            entries = previewPersonaEntries(),
+            selectedPersona = Persona.STUDENT,
+            onPersonaSelected = {}
+        )
     }
 }

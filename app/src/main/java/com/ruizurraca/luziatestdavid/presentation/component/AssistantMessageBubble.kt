@@ -1,5 +1,6 @@
 package com.ruizurraca.luziatestdavid.presentation.component
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,9 +24,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ruizurraca.luziatestdavid.presentation.model.AssistantStreamState
 import com.ruizurraca.luziatestdavid.presentation.model.ChatMessageUiModel
+import com.ruizurraca.luziatestdavid.presentation.theme.LuziaTheme
 
 @Composable
 fun AssistantMessageBubble(
@@ -107,5 +110,75 @@ private fun FailedIndicator(onRetry: (() -> Unit)?) {
                 )
             }
         }
+    }
+}
+
+private fun previewAssistant(
+    content: String = "",
+    streamState: AssistantStreamState
+): ChatMessageUiModel.Assistant = ChatMessageUiModel.Assistant(
+    id = "preview",
+    timestamp = 0L,
+    content = content,
+    streamState = streamState
+)
+
+@Preview(showBackground = true, name = "Light — LOADING")
+@Composable
+private fun AssistantMessageBubblePreview_Loading() {
+    LuziaTheme {
+        AssistantMessageBubble(
+            model = previewAssistant(streamState = AssistantStreamState.LOADING)
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Light — RECEIVED")
+@Composable
+private fun AssistantMessageBubblePreview_Received() {
+    LuziaTheme {
+        AssistantMessageBubble(
+            model = previewAssistant(
+                content = "La fotosíntesis es el proceso por el cual las plantas convierten la luz solar en energía.",
+                streamState = AssistantStreamState.RECEIVED
+            )
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Light — FAILED without retry")
+@Composable
+private fun AssistantMessageBubblePreview_FailedNoRetry() {
+    LuziaTheme {
+        AssistantMessageBubble(
+            model = previewAssistant(streamState = AssistantStreamState.FAILED),
+            onRetry = null
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Light — FAILED with retry")
+@Composable
+private fun AssistantMessageBubblePreview_FailedWithRetry() {
+    LuziaTheme {
+        AssistantMessageBubble(
+            model = previewAssistant(streamState = AssistantStreamState.FAILED),
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    name = "Dark — FAILED with retry"
+)
+@Composable
+private fun AssistantMessageBubblePreview_DarkFailedWithRetry() {
+    LuziaTheme {
+        AssistantMessageBubble(
+            model = previewAssistant(streamState = AssistantStreamState.FAILED),
+            onRetry = {}
+        )
     }
 }
