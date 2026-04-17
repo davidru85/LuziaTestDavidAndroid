@@ -16,6 +16,9 @@ interface ChatMessageDao {
     @Query("SELECT * FROM chat_messages ORDER BY timestamp ASC")
     fun observeAll(): Flow<List<ChatMessageEntity>>
 
+    @Query("DELETE FROM chat_messages WHERE id = :id")
+    suspend fun delete(id: String)
+
     @Query("DELETE FROM chat_messages")
     suspend fun deleteAll()
 }

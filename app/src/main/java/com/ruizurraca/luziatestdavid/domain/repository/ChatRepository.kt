@@ -13,6 +13,8 @@ interface ChatRepository {
 
     suspend fun saveMessage(message: ChatMessage)
 
+    suspend fun deleteMessage(id: String)
+
     fun observeConversation(): Flow<List<ChatMessage>>
 
     suspend fun clearConversation()

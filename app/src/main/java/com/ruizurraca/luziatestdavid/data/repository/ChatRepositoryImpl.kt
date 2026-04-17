@@ -64,6 +64,12 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteMessage(id: String) {
+        withContext(ioDispatcher) {
+            dao.delete(id)
+        }
+    }
+
     override fun observeConversation(): Flow<List<ChatMessage>> =
         dao.observeAll()
             .map { entities -> entities.map { it.toDomain() } }
