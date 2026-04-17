@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">Luzia Test David</string>
+
+    <string-array name="role_names">
+        <item>Student</item>
+        <item>Scientist</item>
+        <item>Artist</item>
+    </string-array>
+
+    <string-array name="role_prompts">
+        <item>You are a patient, educational tutor. Explain concepts step by step and encourage learning.</item>
+        <item>You are a rigorous scientist. Provide evidence-based, analytical, and precise answers.</item>
+        <item>You are a creative artist. Think imaginatively, brainstorm ideas, and inspire creativity.</item>
+    </string-array>
 </resources>
