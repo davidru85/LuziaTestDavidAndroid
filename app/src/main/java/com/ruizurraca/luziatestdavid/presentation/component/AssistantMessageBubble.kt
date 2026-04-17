@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
@@ -27,7 +29,8 @@ import com.ruizurraca.luziatestdavid.presentation.model.ChatMessageUiModel
 @Composable
 fun AssistantMessageBubble(
     model: ChatMessageUiModel.Assistant,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRetry: (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -38,18 +41,21 @@ fun AssistantMessageBubble(
             color = MaterialTheme.colorScheme.surfaceVariant,
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
-            AssistantBubbleContent(model = model)
+            AssistantBubbleContent(model = model, onRetry = onRetry)
         }
     }
 }
 
 @Composable
-private fun AssistantBubbleContent(model: ChatMessageUiModel.Assistant) {
+private fun AssistantBubbleContent(
+    model: ChatMessageUiModel.Assistant,
+    onRetry: (() -> Unit)?
+) {
     when (model.streamState) {
         AssistantStreamState.LOADING -> LoadingLines()
         AssistantStreamState.STREAMING,
         AssistantStreamState.RECEIVED -> AssistantText(model.content)
-        AssistantStreamState.FAILED -> FailedIndicator()
+        AssistantStreamState.FAILED -> FailedIndicator(onRetry = onRetry)
     }
 }
 
@@ -78,13 +84,27 @@ private fun AssistantText(content: String) {
 }
 
 @Composable
-private fun FailedIndicator() {
-    Icon(
-        imageVector = Icons.Filled.Warning,
-        contentDescription = "Reply failed",
-        tint = MaterialTheme.colorScheme.error,
-        modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .size(20.dp)
-    )
+private fun FailedIndicator(onRetry: (() -> Unit)?) {
+    Row(
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Warning,
+            contentDescription = "Reply failed",
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier
+                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .size(20.dp)
+        )
+        if (onRetry != null) {
+            IconButton(onClick = onRetry) {
+                Icon(
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = "Retry reply",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
 }
