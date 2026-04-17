@@ -19,6 +19,7 @@ import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -86,7 +87,7 @@ private fun AssistantText(content: String) {
 @Composable
 private fun FailedIndicator(onRetry: (() -> Unit)?) {
     Row(
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         Icon(

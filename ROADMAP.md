@@ -57,7 +57,7 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
     - [x] **5.5.D** `ChatRepository.deleteMessage(id)` + DAO.
     - [x] **5.5.E** VM extensions: `selectedPersona`, `onPersonaSelected`, `onRetryLastFailure`; `onSendTap` attaches active `personaPrompt`.
     - [x] **5.5.F** `RoleSelectorChips` component.
-    - [ ] **5.5.G** `AssistantMessageBubble` retry button.
+    - [x] **5.5.G** `AssistantMessageBubble` retry button.
     - [ ] **5.5.H** `ChatInputBar` composite.
     - [ ] **5.5.I** `ChatTopAppBar` + DeleteSweep confirm dialog.
     - [ ] **5.5.J** `ChatScreen` scaffold + auto-scroll + Snackbar + `RECORD_AUDIO` permission launcher (absorbs Phase 6.2).
