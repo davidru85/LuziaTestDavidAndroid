@@ -50,24 +50,20 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 - [x] **5.2 UI Models:** Implement `ChatUiState` (sealed interface) and `ChatMessageUiModel`.
 - [x] **5.3 ViewModels:** Write tests for `ChatViewModel` (State transitions: `Idle` $\rightarrow$ `Recording` $\rightarrow$ `Streaming`). Implement `ViewModel` logic.
 - [x] **5.4 Components:** Implement `MessageBubble`, `RecordButton`, and `StreamingIndicator` (test via `ComposeTestRule`).
-- [x] **5.5 Screen:** Compose `ChatScreen` from the 5.4 leaves; integrate `ChatViewModel`, the persona system, Tier-2 retry, and permission flow. Forks + sub-task plan recorded in [MEMORY.md](MEMORY.md).
-    - [x] **5.5.A** Domain refactor: drop `MessageRole.SYSTEM`; add `personaPrompt: String?` to `ChatMessage`.
-    - [x] **5.5.B** Data refactor: destructive Room DB bump; `ChatMapper` emits per-message `role` (persona prompt for user, `"assistant"` for assistant).
-    - [x] **5.5.C** Persona catalog: `strings.xml` arrays + `Persona` enum + `PersonaCatalog` (domain interface, data impl).
-    - [x] **5.5.D** `ChatRepository.deleteMessage(id)` + DAO.
-    - [x] **5.5.E** VM extensions: `selectedPersona`, `onPersonaSelected`, `onRetryLastFailure`; `onSendTap` attaches active `personaPrompt`.
-    - [x] **5.5.F** `RoleSelectorChips` component.
-    - [x] **5.5.G** `AssistantMessageBubble` retry button.
-    - [x] **5.5.H** `ChatInputBar` composite.
-    - [x] **5.5.I** `ChatTopAppBar` + DeleteSweep confirm dialog.
-    - [x] **5.5.J** `ChatScreen` scaffold + auto-scroll + Snackbar + `RECORD_AUDIO` permission launcher (absorbs Phase 6.2).
-    - [x] **5.5.K** Wire `ChatScreen` into `MainActivity`; device smoke test (absorbs Phase 6.1).
+- [x] **5.5 Screen:** Compose `ChatScreen` from the 5.4 leaves; integrate `ChatViewModel`, the persona system, Tier-2 retry, and permission flow. Forks + decision log recorded in [MEMORY.md](MEMORY.md). Delivered:
+    - **Per-message persona architecture** (MEMORY Fork 1): dropped `MessageRole.SYSTEM`; added `ChatMessage.personaPrompt: String?`; `ChatMapper` emits the persona prompt as the wire `role` for user messages and `"assistant"` for assistant replies; destructive Room bump (v1 → v2) with `fallbackToDestructiveMigration(dropAllTables = true)`.
+    - **Persona catalog**: `Persona` enum (`STUDENT`/`SCIENTIST`/`ARTIST`) + `PersonaEntry` data class + `PersonaCatalog` domain interface; pure-JVM `DefaultPersonaCatalog` impl wired via `CatalogModule` Hilt provider; `role_names` / `role_prompts` string arrays in `strings.xml`.
+    - **Tier-2 retry flow** (MEMORY Fork 2): `ChatRepository.deleteMessage(id)` + DAO `@Query`; `ChatViewModel.onRetryLastFailure()` deletes the last FAILED assistant row and re-invokes `StreamAssistantReplyUseCase` with cleaned history; `AssistantMessageBubble` gained optional `onRetry` that renders only on FAILED.
+    - **ViewModel extensions**: `selectedPersona: StateFlow<Persona>` (default `STUDENT`), `onPersonaSelected(...)`, and `onSendTap` captures the active persona prompt per user message.
+    - **Compose leaves**: `RoleSelectorChips` (single-select `FilterChip` strip, `Role.RadioButton` semantics), `ChatInputBar` (OutlinedTextField + MorphingActionButton + StreamingIndicator inside `BottomAppBar`), `ChatTopAppBar` (DeleteSweep icon + confirm `AlertDialog`, disabled when empty).
+    - **Screen scaffold**: `ChatScreenContent` stateless Scaffold composing all leaves with LazyColumn message list; `ChatScreen` VM-wired wrapper handling `RECORD_AUDIO` permission launcher + rationale dialog + Snackbar events (absorbs former Phase 6.2).
+    - **Activity wiring**: `MainActivity` hosts `ChatScreen` as the sole entry point (absorbs former Phase 6.1).
 
 ### Phase 6: Integration & Wiring
 *Absorbed into Phase 5.5 — see [MEMORY.md](MEMORY.md) Fork 3.*
 
-- [x] ~~6.1 **Activity Wiring:** Host `ChatScreen` in `MainActivity`.~~ → **5.5.K**
-- [x] ~~6.2 **Runtime Permissions:** Implement `ActivityResultLauncher` for `RECORD_AUDIO`.~~ → **5.5.J**
+- [x] ~~6.1 **Activity Wiring:** Host `ChatScreen` in `MainActivity`.~~ → **5.5**
+- [x] ~~6.2 **Runtime Permissions:** Implement `ActivityResultLauncher` for `RECORD_AUDIO`.~~ → **5.5**
  
 ### Phase 7: Polish & QA
 *Goal: Refine the UX and ensure robustness.*
