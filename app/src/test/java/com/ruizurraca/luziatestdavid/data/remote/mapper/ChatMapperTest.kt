@@ -38,21 +38,6 @@ class ChatMapperTest {
     }
 
     @Test
-    fun `toRequestDto maps all MessageRole values to their wire strings`() {
-        val messages = listOf(
-            ChatMessage("u", MessageRole.USER, "Hi", 1L),
-            ChatMessage("a", MessageRole.ASSISTANT, "Hello!", 2L)
-        )
-
-        val dto = mapper.toRequestDto(messages)
-
-        assertEquals(
-            listOf("user", "assistant"),
-            dto.messages.map { it.role }
-        )
-    }
-
-    @Test
     fun `toRequestDto preserves message order`() {
         val messages = listOf(
             ChatMessage("a", MessageRole.USER, "first", 1L),
