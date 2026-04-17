@@ -2,7 +2,6 @@ package com.ruizurraca.luziatestdavid.presentation.component
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -77,7 +76,7 @@ class ChatInputBarTest {
             onDraftChange = { captured = it }
         )
 
-        composeTestRule.onNode(hasSetTextAction()).performTextInput("hola")
+        composeTestRule.onNodeWithContentDescription("Message input").performTextInput("hola")
 
         assertEquals("hola", captured)
     }
@@ -152,7 +151,7 @@ class ChatInputBarTest {
     fun disabled_textFieldReportsDisabled() {
         setBar(isEnabled = false)
 
-        composeTestRule.onNode(hasSetTextAction()).assertIsNotEnabled()
+        composeTestRule.onNodeWithContentDescription("Message input").assertIsNotEnabled()
     }
 
     @Test
