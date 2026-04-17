@@ -10,7 +10,8 @@ fun ChatMessage.toEntity(): ChatMessageEntity = ChatMessageEntity(
     role = role.wire,
     content = content,
     timestamp = timestamp,
-    status = status.name
+    status = status.name,
+    personaPrompt = personaPrompt
 )
 
 fun ChatMessageEntity.toDomain(): ChatMessage = ChatMessage(
@@ -18,5 +19,6 @@ fun ChatMessageEntity.toDomain(): ChatMessage = ChatMessage(
     role = MessageRole.entries.first { it.wire == role },
     content = content,
     timestamp = timestamp,
-    status = MessageStatus.valueOf(status)
+    status = MessageStatus.valueOf(status),
+    personaPrompt = personaPrompt
 )

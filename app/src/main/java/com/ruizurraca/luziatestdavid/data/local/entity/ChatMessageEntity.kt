@@ -9,5 +9,6 @@ data class ChatMessageEntity(
     val role: String,
     val content: String,
     val timestamp: Long,
-    val status: String
+    val status: String,
+    val personaPrompt: String? = null
 )
