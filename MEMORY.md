@@ -94,6 +94,24 @@ Manual E2E testing (Phase 7.1.2) against the backend returned `422 VALIDATION_ER
 
 **Deferred (Phase 7.1.4):** empty-`content` assistant rows observed lingering in Room after failed streams — a separate, client-only defect unrelated to the wire-format change.
 
+#### Fork 4 addendum — backend decisions locked in (2026-04-18)
+
+Backend team responded with their API_SPEC.md v1.1.0. Points that bind the Android client:
+
+1.  **`role_prompt` on non-user turns is accept-and-ignore**, not strict reject. Android still omits it (minimal payload), but accidental inclusion is safe — no 422.
+2.  **Empty `content` rules are role-dependent:**
+    *   `"user"` / `"system"` empty → **422**.
+    *   `"assistant"` empty → **accepted on the wire; silently dropped before forwarding to OpenAI.** This means the transient empty-assistant-placeholder pattern the app produces during an in-flight SSE stream is wire-safe. 7.1.4 cleanup remains a pure client-hygiene task, **not a blocker** for 7.1.3.
+3.  **Missing / empty `role_prompt` on any user turn → strict 422.** Enforced on the *latest* user turn **and every historical user turn** in the payload. Implication: the Android `ChatMapper` must guarantee a non-empty `role_prompt` for every user message serialized, including older rows in history. Current domain model populates `ChatMessage.personaPrompt` at send time, so new rows are safe; if any pre-existing row could have a null `personaPrompt`, it must be filtered or filled client-side before POST.
+4.  **Android never emits `"system"`.** The backend is the sole producer of `system` turns and injects exactly one, prepended to the OpenAI payload from the latest user turn's `role_prompt`. The `"system"` enum value can be **omitted from the Android DTO / domain enum entirely** if it simplifies the model. The spec retains it only for forward-compat.
+5.  **Backend persona injection logic** (informational, affects client mental model):
+    *   Only the **latest** `"user"` turn's `role_prompt` steers the next reply.
+    *   Historical `role_prompt`s are audit metadata — required to be valid, but do not re-enter OpenAI.
+    *   Server-side memory: none; interleaved `system` turns: none. One system turn per request, derived from the latest user turn only.
+6.  **Specific 422 `message` strings are byte-level pinned** (see `TECHNICAL_SPEC.md §API Contracts #2 — Validation errors`). The client's `ErrorMapper` / `AppError` stack must recognise `code: "VALIDATION_ERROR"` as a Tier-1 event (Snackbar). Currently `AppError.fromCode(...)` only knows `BAD_REQUEST` and `FILE_TOO_LARGE`; `VALIDATION_ERROR` falls through to `Unknown` → Tier-3 `AlertDialog`, which is the **wrong tier**. Adding `VALIDATION_ERROR` as a first-class `AppError` variant (Tier-1) is part of Phase 7.1.3 scope.
+7.  **No backwards compatibility.** Atomic cutover; the backend will not accept two-field payloads after deployment. Client and backend ship together — no mixed-shape transient state.
+8.  **Single backend environment.** Android `staging` and `production` build flavors point to the same backend URL. Flavor orthogonality is a client concern only.
+
 ---
 
 ## Phase 5.5 — Sub-task Plan

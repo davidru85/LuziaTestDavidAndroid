@@ -32,12 +32,39 @@ To maintain testability and separation of concerns, the following rules must be 
 *   **Content-Type:** `application/json`
 *   **Request Body:** The `messages` array carries the full conversation history. Each message has **three fields**:
     *   **`role`** *(string, required)* — enum identifying the author of the message, following standard LLM conventions. Allowed values: `"user"`, `"assistant"`, `"system"`.
-    *   **`role_prompt`** *(string, required on `"user"` messages; omitted on `"assistant"` and `"system"` messages)* — the persona prompt (from `role_prompts`) that was active when the user sent the message. Tells the responding LLM which persona to adopt for the reply.
+    *   **`role_prompt`** *(string, required on `"user"` turns; optional-but-ignored on `"assistant"` / `"system"` turns)* — the persona prompt (from `role_prompts`) that was active when the user sent the message. On user turns the backend reads it to steer the reply (see server-side semantics below). On non-user turns the backend silently drops it, so sending or omitting is equivalent; the Android client **omits it** for payload minimality.
     *   **`content`** *(string, required)* — the textual content of the message.
 *   **Per-message persona capture semantics** (preserved from prior contract, moved from `role` to `role_prompt`):
     *   When a user message is created, the persona prompt active at that moment is captured and persisted as `role_prompt`.
     *   Changing the persona mid-conversation affects only **subsequent** user messages; historical user messages retain the `role_prompt` active when they were sent.
-    *   There is **no standalone `system` entry** in the current client flow; the enum value is defined for future use and backend compatibility.
+    *   **Android never emits `"system"`** turns. The enum value exists because the backend is the sole producer of `system` turns (injected server-side — see below). If the client ever needed to model `system`, it would follow the same rules as `assistant` (no `role_prompt`, non-empty `content`).
+*   **Server-side persona injection (informational — the backend does this, the client cannot observe it):**
+    1.  The backend reads the `role_prompt` of the **latest** `"user"` message in `messages`.
+    2.  Prepends a synthetic `{"role":"system","content":<that role_prompt>}` turn at the head of the payload forwarded to OpenAI.
+    3.  Strips `role_prompt` from every message.
+    4.  Drops any `"assistant"` message whose `content` is an empty string.
+    5.  Forwards the resulting standard `{role, content}` list to OpenAI.
+
+    Consequence: **only the last user turn's `role_prompt` steers the next reply**. Historical `role_prompt`s on earlier user turns are required to be valid (see validation rules) but are audit metadata only — they do not re-enter OpenAI. No server-side memory, no per-turn interleaved system turns.
+*   **Empty-`content` handling (per role):**
+    | Role          | Empty `content`                                                             |
+    | :------------ | :-------------------------------------------------------------------------- |
+    | `"user"`      | **422 rejected**                                                            |
+    | `"system"`    | **422 rejected**                                                            |
+    | `"assistant"` | Accepted on the wire, but silently **dropped** before forwarding to OpenAI. |
+
+    Practical meaning for the Android client: the transient empty-assistant-placeholder that may appear while an SSE stream is in flight is wire-safe (no 422) but has zero effect on the LLM. Cleanup of lingering empty-content assistant rows in the local history is a separate client concern (ROADMAP 7.1.4).
+*   **Validation errors — verbatim 422 `message` strings** *(match byte-for-byte; the client's error mapper keys off these)*:
+    | Trigger                                              | `message`                                                          |
+    | :--------------------------------------------------- | :----------------------------------------------------------------- |
+    | Empty `messages` array                               | `Messages array must contain at least one message.`                |
+    | `role` not in the enum                               | `role must be one of user\|assistant\|system.`                     |
+    | Missing / empty `role_prompt` on a `"user"` turn     | `user messages must include role_prompt.`                          |
+    | Empty `content` on a `"user"` or `"system"` turn     | `content must be a non-empty string for user and system messages.` |
+    | Missing field / wrong type (fallback)                | `Each message must have 'role' and 'content' fields.`              |
+
+    All 422 responses share `code: "VALIDATION_ERROR"` and the standard `{"error":{"code":"...","message":"..."}}` envelope (`§3 Global Error Schema`).
+*   **Backwards compatibility:** **none.** The client and backend cut over to the three-field schema in the same release. Mixed / two-field payloads will 422.
 *   **Example** (first user turn in "Student" mode, assistant reply, second user turn in "Artist" mode):
     ```json
     {
@@ -97,7 +124,7 @@ Errors must be mapped to a `sealed class AppError` in the domain layer.
 
 | Tier | Mechanism | Triggering Condition | UI Implementation |
 | :--- | :--- | :--- | :--- |
-| **Tier 1** | `Snackbar` | Validation/Format errors (`BAD_REQUEST`, `FILE_TOO_LARGE`) | Auto-dismissing, non-blocking. |
+| **Tier 1** | `Snackbar` | Validation/Format errors (`VALIDATION_ERROR`, `BAD_REQUEST`, `FILE_TOO_LARGE`) | Auto-dismissing, non-blocking. |
 | **Tier 2** | `Inline Bubble` | Connectivity/Network errors (`TIMEOUT`, `NETWORK_ERROR`) | Error icon in the message bubble + **Retry Button**. |
 | **Tier 3** | `AlertDialog` | Critical/Server errors (`INTERNAL_ERROR`, `SERVICE_UNAVAILABLE`) | Modal, requires user dismissal. |
 
