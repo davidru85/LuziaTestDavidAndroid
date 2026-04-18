@@ -9,7 +9,18 @@ import javax.inject.Inject
 class ChatMapper @Inject constructor() {
 
     fun toRequestDto(messages: List<ChatMessage>): ChatRequestDto =
-        ChatRequestDto(messages = messages.map { it.toDto() })
+        ChatRequestDto(
+            messages = messages
+                .filterNot { it.isBlankAssistant() }
+                .map { it.toDto() }
+        )
+
+    // An assistant row with no content is transient residue from a stream that errored
+    // before the first token (StreamAssistantReplyUseCase's PENDING placeholder, finalised
+    // as FAILED with empty content). The backend accepts-and-drops it (Fork 4 addendum §2)
+    // but replaying it pollutes every subsequent /chat payload — drop it at the wire.
+    private fun ChatMessage.isBlankAssistant(): Boolean =
+        role == MessageRole.ASSISTANT && content.isBlank()
 
     private fun ChatMessage.toDto(): ChatMessageDto = when (role) {
         MessageRole.USER -> ChatMessageDto(
