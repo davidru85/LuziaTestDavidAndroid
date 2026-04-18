@@ -97,8 +97,11 @@ class ChatRepositoryImplTest {
 
     // region streamChat
 
+    private val tutorPrompt = "You are a patient, educational tutor. " +
+        "Explain concepts step by step and encourage learning."
+
     private val userHistory = listOf(
-        ChatMessage("u1", MessageRole.USER, "Hi", 1L)
+        ChatMessage("u1", MessageRole.USER, "Hi", 1L, personaPrompt = tutorPrompt)
     )
 
     @Test

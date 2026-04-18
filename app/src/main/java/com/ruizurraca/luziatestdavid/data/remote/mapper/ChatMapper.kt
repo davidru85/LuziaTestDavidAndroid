@@ -9,17 +9,27 @@ import javax.inject.Inject
 class ChatMapper @Inject constructor() {
 
     fun toRequestDto(messages: List<ChatMessage>): ChatRequestDto =
-        ChatRequestDto(
-            messages = messages.map { message ->
-                ChatMessageDto(
-                    role = message.toWireRole(),
-                    content = message.content
-                )
-            }
-        )
+        ChatRequestDto(messages = messages.map { it.toDto() })
 
-    private fun ChatMessage.toWireRole(): String = when (role) {
-        MessageRole.USER -> personaPrompt ?: MessageRole.USER.wire
-        MessageRole.ASSISTANT -> MessageRole.ASSISTANT.wire
+    private fun ChatMessage.toDto(): ChatMessageDto = when (role) {
+        MessageRole.USER -> ChatMessageDto(
+            role = MessageRole.USER.wire,
+            rolePrompt = requireValidUserPrompt(),
+            content = content
+        )
+        MessageRole.ASSISTANT -> ChatMessageDto(
+            role = MessageRole.ASSISTANT.wire,
+            rolePrompt = null,
+            content = content
+        )
+    }
+
+    private fun ChatMessage.requireValidUserPrompt(): String {
+        val prompt = personaPrompt
+        check(!prompt.isNullOrBlank()) {
+            "User message $id has a null or blank personaPrompt; " +
+                "every user turn must carry a role_prompt (Fork 4)."
+        }
+        return prompt
     }
 }
