@@ -129,6 +129,129 @@ class AppErrorTest {
         assertEquals("tier2", label)
     }
 
+    // region Backend-message preservation (Phase 7.2.A, Fork 5) — the six fixed-message variants
+
+    @Test
+    fun `fromCode BAD_REQUEST with specific backend message preserves the message verbatim`() {
+        val backendMessage = "Audio file is empty or too short to transcribe."
+
+        val error = AppError.fromCode("BAD_REQUEST", backendMessage)
+
+        assertTrue(error is AppError.BadRequest)
+        assertEquals("BAD_REQUEST", error.code)
+        assertEquals(backendMessage, error.message)
+    }
+
+    @Test
+    fun `fromCode BAD_REQUEST with null message falls back to the generic default`() {
+        val error = AppError.fromCode("BAD_REQUEST", message = null)
+
+        assertTrue(error is AppError.BadRequest)
+        assertEquals("BAD_REQUEST", error.code)
+        assertTrue(error.message.isNotBlank())
+        assertEquals("The request was invalid.", error.message)
+    }
+
+    @Test
+    fun `fromCode BAD_REQUEST with blank message falls back to the generic default`() {
+        val error = AppError.fromCode("BAD_REQUEST", message = "   ")
+
+        assertTrue(error is AppError.BadRequest)
+        assertEquals("The request was invalid.", error.message)
+    }
+
+    @Test
+    fun `fromCode FILE_TOO_LARGE with specific backend message preserves the message verbatim`() {
+        val backendMessage = "Audio file exceeds the 25 MB size limit."
+
+        val error = AppError.fromCode("FILE_TOO_LARGE", backendMessage)
+
+        assertTrue(error is AppError.FileTooLarge)
+        assertEquals(backendMessage, error.message)
+    }
+
+    @Test
+    fun `fromCode FILE_TOO_LARGE with null message falls back to the generic default`() {
+        val error = AppError.fromCode("FILE_TOO_LARGE", message = null)
+
+        assertTrue(error is AppError.FileTooLarge)
+        assertEquals("The audio file is too large.", error.message)
+    }
+
+    @Test
+    fun `fromCode TIMEOUT with specific backend message preserves the message verbatim`() {
+        val backendMessage = "Upstream Whisper call timed out after 30 seconds."
+
+        val error = AppError.fromCode("TIMEOUT", backendMessage)
+
+        assertTrue(error is AppError.Timeout)
+        assertEquals(backendMessage, error.message)
+    }
+
+    @Test
+    fun `fromCode TIMEOUT with null message falls back to the generic default`() {
+        val error = AppError.fromCode("TIMEOUT", message = null)
+
+        assertTrue(error is AppError.Timeout)
+        assertEquals("The request timed out.", error.message)
+    }
+
+    @Test
+    fun `fromCode NETWORK_ERROR with specific backend message preserves the message verbatim`() {
+        val backendMessage = "Upstream connection reset during streaming."
+
+        val error = AppError.fromCode("NETWORK_ERROR", backendMessage)
+
+        assertTrue(error is AppError.Network)
+        assertEquals(backendMessage, error.message)
+    }
+
+    @Test
+    fun `fromCode NETWORK_ERROR with null message falls back to the generic default`() {
+        val error = AppError.fromCode("NETWORK_ERROR", message = null)
+
+        assertTrue(error is AppError.Network)
+        assertEquals("Network connection failed.", error.message)
+    }
+
+    @Test
+    fun `fromCode SERVICE_UNAVAILABLE with specific backend message preserves the message verbatim`() {
+        val backendMessage = "Backend is under maintenance until 18:00 UTC."
+
+        val error = AppError.fromCode("SERVICE_UNAVAILABLE", backendMessage)
+
+        assertTrue(error is AppError.ServiceUnavailable)
+        assertEquals(backendMessage, error.message)
+    }
+
+    @Test
+    fun `fromCode SERVICE_UNAVAILABLE with null message falls back to the generic default`() {
+        val error = AppError.fromCode("SERVICE_UNAVAILABLE", message = null)
+
+        assertTrue(error is AppError.ServiceUnavailable)
+        assertEquals("The service is temporarily unavailable.", error.message)
+    }
+
+    @Test
+    fun `fromCode INTERNAL_ERROR with specific backend message preserves the message verbatim`() {
+        val backendMessage = "Transcription service failed. Please try again."
+
+        val error = AppError.fromCode("INTERNAL_ERROR", backendMessage)
+
+        assertTrue(error is AppError.Internal)
+        assertEquals(backendMessage, error.message)
+    }
+
+    @Test
+    fun `fromCode INTERNAL_ERROR with null message falls back to the generic default`() {
+        val error = AppError.fromCode("INTERNAL_ERROR", message = null)
+
+        assertTrue(error is AppError.Internal)
+        assertEquals("An internal server error occurred.", error.message)
+    }
+
+    // endregion
+
     // region ValidationError (Fork 4 addendum §6 — backend emits code=VALIDATION_ERROR for /chat)
 
     @Test
