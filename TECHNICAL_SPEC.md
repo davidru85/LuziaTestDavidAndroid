@@ -30,21 +30,30 @@ To maintain testability and separation of concerns, the following rules must be 
 
 ### 2. POST `/chat` (LLM Streaming)
 *   **Content-Type:** `application/json`
-*   **Request Body:** The `messages` array carries the full conversation history. The `role` field is populated **per-message**:
-    *   **User messages:** `role` = the persona prompt string (from `role_prompts`) that was active when the message was sent.
-    *   **Assistant messages:** `role` = `"assistant"`.
-    *   There is **no standalone `system` entry**; the persona prompt rides on every user message.
+*   **Request Body:** The `messages` array carries the full conversation history. Each message has **three fields**:
+    *   **`role`** *(string, required)* — enum identifying the author of the message, following standard LLM conventions. Allowed values: `"user"`, `"assistant"`, `"system"`.
+    *   **`role_prompt`** *(string, required on `"user"` messages; omitted on `"assistant"` and `"system"` messages)* — the persona prompt (from `role_prompts`) that was active when the user sent the message. Tells the responding LLM which persona to adopt for the reply.
+    *   **`content`** *(string, required)* — the textual content of the message.
+*   **Per-message persona capture semantics** (preserved from prior contract, moved from `role` to `role_prompt`):
+    *   When a user message is created, the persona prompt active at that moment is captured and persisted as `role_prompt`.
+    *   Changing the persona mid-conversation affects only **subsequent** user messages; historical user messages retain the `role_prompt` active when they were sent.
+    *   There is **no standalone `system` entry** in the current client flow; the enum value is defined for future use and backend compatibility.
 *   **Example** (first user turn in "Student" mode, assistant reply, second user turn in "Artist" mode):
     ```json
     {
       "messages": [
         {
-          "role": "You are a patient, educational tutor. Explain concepts step by step and encourage learning.",
+          "role": "user",
+          "role_prompt": "You are a patient, educational tutor. Explain concepts step by step and encourage learning.",
           "content": "¿Cómo funciona la fotosíntesis?"
         },
-        { "role": "assistant", "content": "La fotosíntesis es el proceso…" },
         {
-          "role": "You are a creative artist. Think imaginatively, brainstorm ideas, and inspire creativity.",
+          "role": "assistant",
+          "content": "La fotosíntesis es el proceso…"
+        },
+        {
+          "role": "user",
+          "role_prompt": "You are a creative artist. Think imaginatively, brainstorm ideas, and inspire creativity.",
           "content": "Ahora escríbelo como un poema"
         }
       ]

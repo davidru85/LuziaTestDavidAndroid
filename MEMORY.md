@@ -55,7 +55,44 @@ FAILED assistant bubbles gain a retry affordance wired end-to-end.
 *   **Auto-scroll:** LazyColumn auto-scrolls only when the user is already near the bottom. Implemented with `derivedStateOf` on `LazyListState.firstVisibleItemIndex`. Matches `DESIGN_SYSTEM.md §Auto-Scroll Logic` literally.
 *   **DeleteSweep confirmation:** `AlertDialog` before clearing the conversation (DESIGN_SYSTEM literal).
 *   **Tier-1 Snackbar:** `ChatScreen` subscribes to `vm.events: SharedFlow<ChatEvent>` via `LaunchedEffect` + `SnackbarHostState`.
-*   **Tier-3 AlertDialog:** **Deferred to Phase 7.** All errors surface as Tier-1 Snackbars for now. Tier classification inside `ChatEvent` is Phase 7 scope.
+*   **Tier-3 AlertDialog:** **Deferred to Phase 7.** All errors surface as Tier-1 Snackbars for now. Tier classification inside `ChatEvent` is Phase 7 scope. → **Shipped in Phase 7.0** (2026-04-18) via `ChatEvent.Tier1`/`Tier3` + `AppError.toChatEvent()`.
+
+---
+
+## Phase 7.1 — Decisions Locked (2026-04-18)
+
+### Fork 4 — Revised `/chat` wire contract (supersedes Fork 1 for serialisation)
+
+Manual E2E testing (Phase 7.1.2) against the backend returned `422 VALIDATION_ERROR` on every `/chat` request. The Fork 1 design — stuffing the full persona prompt into the wire `role` field — is incompatible with the backend's standard LLM role validation (the backend enforces `role ∈ {"user", "assistant", "system"}`).
+
+**Resolution (confirmed 2026-04-18):** the wire format for `POST /chat` now carries **three fields per message**:
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `role` | string enum | `"user"` / `"assistant"` / `"system"`. Standard LLM convention. |
+| `role_prompt` | string | **Required on `"user"` messages; omitted on `"assistant"` and `"system"`.** Carries the persona prompt active when the user sent the message. |
+| `content` | string | Message text. Unchanged. |
+
+**Per-message persona capture semantics are preserved** — the persona active at send-time sticks to the user message for the lifetime of the conversation — but it now lives in its own dedicated field (`role_prompt`) instead of overloading `role`.
+
+**What survives from Fork 1 (still in force):**
+*   No standalone `system` entry is injected by the client at index 0 of the history. The `"system"` enum value is defined for forward compatibility only; the current client flow never emits it.
+*   Assistant messages serialize as `role = "assistant"` without a `role_prompt`.
+*   Changing the persona mid-conversation affects only subsequent user messages; historical user messages retain the `role_prompt` active when they were sent.
+
+**What changes from Fork 1:**
+*   Wire-level `role` is no longer the persona prompt. It is the standard LLM enum.
+*   New `role_prompt` field carries the persona prompt on user messages.
+
+**Domain and persistence layers are unchanged.** `ChatMessage.personaPrompt: String?` (domain) and `ChatMessageEntity.personaPrompt: String?` (Room) already exist (added in 5.5.B); no Room schema bump is required.
+
+**Impacted specs updated:**
+*   `TECHNICAL_SPEC.md §API Contracts #2` — rewritten to the three-field shape.
+*   `DESIGN_SYSTEM.md §2` — untouched; it only describes UX (per-message persona capture), not the wire shape.
+
+**Execution note — backend coordination:** Phase 7.1.3 TDD work is **blocked on the backend developer confirming deployment of the matching three-field contract**. Implementation (DTO + `ChatMapper`) begins only after the backend is live with the new schema.
+
+**Deferred (Phase 7.1.4):** empty-`content` assistant rows observed lingering in Room after failed streams — a separate, client-only defect unrelated to the wire-format change.
 
 ---
 
