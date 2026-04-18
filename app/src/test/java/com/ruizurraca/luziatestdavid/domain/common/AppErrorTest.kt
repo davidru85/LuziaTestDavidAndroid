@@ -122,9 +122,46 @@ class AppErrorTest {
             AppError.Network -> "tier2"
             AppError.ServiceUnavailable -> "tier3"
             AppError.Internal -> "tier3"
+            is AppError.ValidationError -> "tier1"
             is AppError.Unknown -> "tier3"
         }
 
         assertEquals("tier2", label)
     }
+
+    // region ValidationError (Fork 4 addendum §6 — backend emits code=VALIDATION_ERROR for /chat)
+
+    @Test
+    fun `ValidationError carries VALIDATION_ERROR code and the backend-supplied message verbatim`() {
+        val backendMessage = "user messages must include role_prompt."
+
+        val error: AppError = AppError.ValidationError(rawMessage = backendMessage)
+
+        assertEquals("VALIDATION_ERROR", error.code)
+        assertEquals(backendMessage, error.message)
+    }
+
+    @Test
+    fun `fromCode maps VALIDATION_ERROR to ValidationError preserving the backend message`() {
+        val backendMessage = "role must be one of user|assistant|system."
+
+        val error = AppError.fromCode(code = "VALIDATION_ERROR", message = backendMessage)
+
+        assertTrue(error is AppError.ValidationError)
+        assertEquals("VALIDATION_ERROR", error.code)
+        assertEquals(backendMessage, error.message)
+    }
+
+    @Test
+    fun `fromCode VALIDATION_ERROR with null or blank message falls back to non-blank default`() {
+        val nullMessageError = AppError.fromCode("VALIDATION_ERROR", message = null)
+        val blankMessageError = AppError.fromCode("VALIDATION_ERROR", message = "   ")
+
+        assertTrue(nullMessageError is AppError.ValidationError)
+        assertTrue(blankMessageError is AppError.ValidationError)
+        assertTrue(nullMessageError.message.isNotBlank())
+        assertTrue(blankMessageError.message.isNotBlank())
+    }
+
+    // endregion
 }

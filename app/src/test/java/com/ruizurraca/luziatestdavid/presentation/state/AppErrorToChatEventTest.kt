@@ -75,4 +75,15 @@ class AppErrorToChatEventTest {
         assertTrue(tier3.title.isNotBlank())
         assertEquals("something weird", tier3.message)
     }
+
+    @Test
+    fun `ValidationError maps to Tier1 preserving the backend-supplied message`() {
+        val backendMessage = "user messages must include role_prompt."
+        val error = AppError.ValidationError(rawMessage = backendMessage)
+
+        val event = error.toChatEvent()
+
+        assertTrue(event is ChatEvent.Tier1) { "expected Tier1, got $event" }
+        assertEquals(backendMessage, (event as ChatEvent.Tier1).message)
+    }
 }
