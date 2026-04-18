@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,7 +43,7 @@ fun MorphingActionButton(
                 enabled = enabled
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Mic,
+                    imageVector = if (isRecording) Icons.Filled.Stop else Icons.Filled.Mic,
                     contentDescription = stringResource(
                         if (isRecording) R.string.cd_stop_recording else R.string.cd_record_voice_message
                     )
