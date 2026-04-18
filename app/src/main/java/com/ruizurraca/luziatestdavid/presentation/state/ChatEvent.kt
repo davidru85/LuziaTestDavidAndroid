@@ -13,6 +13,8 @@ fun AppError.toChatEvent(): ChatEvent = when (this) {
     AppError.Timeout,
     AppError.Network -> ChatEvent.Tier1(message)
 
+    is AppError.ValidationError -> ChatEvent.Tier1(message)
+
     AppError.ServiceUnavailable,
     AppError.Internal -> ChatEvent.Tier3(title = "Service error", message = message)
 

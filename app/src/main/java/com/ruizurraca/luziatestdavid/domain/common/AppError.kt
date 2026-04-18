@@ -34,12 +34,18 @@ sealed class AppError(
         message = "An internal server error occurred."
     )
 
+    data class ValidationError(
+        val rawMessage: String
+    ) : AppError(code = VALIDATION_ERROR_CODE, message = rawMessage)
+
     data class Unknown(
         val rawCode: String,
         val rawMessage: String
     ) : AppError(code = rawCode, message = rawMessage)
 
     companion object {
+        private const val VALIDATION_ERROR_CODE = "VALIDATION_ERROR"
+
         fun fromCode(code: String, message: String? = null): AppError = when (code) {
             BadRequest.code -> BadRequest
             FileTooLarge.code -> FileTooLarge
@@ -47,6 +53,10 @@ sealed class AppError(
             Network.code -> Network
             ServiceUnavailable.code -> ServiceUnavailable
             Internal.code -> Internal
+            VALIDATION_ERROR_CODE -> ValidationError(
+                rawMessage = message?.takeIf { it.isNotBlank() }
+                    ?: "Validation error."
+            )
             else -> Unknown(
                 rawCode = code,
                 rawMessage = message?.takeIf { it.isNotBlank() }
