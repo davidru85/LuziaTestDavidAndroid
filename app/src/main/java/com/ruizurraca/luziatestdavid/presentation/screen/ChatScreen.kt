@@ -35,11 +35,13 @@ fun ChatScreen(
     val selectedPersona by viewModel.selectedPersona.collectAsState()
     val personaEntries = remember { personaCatalog.entries() }
     val snackbarHostState = remember { SnackbarHostState() }
+    var tier3Event by remember { mutableStateOf<ChatEvent.Tier3?>(null) }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                is ChatEvent.Error -> snackbarHostState.showSnackbar(event.message)
+                is ChatEvent.Tier1 -> snackbarHostState.showSnackbar(event.message)
+                is ChatEvent.Tier3 -> tier3Event = event
             }
         }
     }
@@ -113,6 +115,19 @@ fun ChatScreen(
             dismissButton = {
                 TextButton(onClick = { showRationale = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    tier3Event?.let { event ->
+        AlertDialog(
+            onDismissRequest = { tier3Event = null },
+            title = { Text(event.title) },
+            text = { Text(event.message) },
+            confirmButton = {
+                TextButton(onClick = { tier3Event = null }) {
+                    Text("OK")
                 }
             }
         )
