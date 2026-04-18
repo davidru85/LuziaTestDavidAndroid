@@ -46,17 +46,18 @@ class ResourceTest {
     @Test
     fun `Error carries optional AppError alongside message and throwable`() {
         val cause = IllegalStateException("socket closed")
+        val networkError = AppError.Network()
         val resource: Resource<String> = Resource.Error(
             message = "Network connection failed.",
             throwable = cause,
-            error = AppError.Network
+            error = networkError
         )
 
         assertTrue(resource is Resource.Error)
         val err = resource as Resource.Error
         assertEquals("Network connection failed.", err.message)
         assertSame(cause, err.throwable)
-        assertSame(AppError.Network, err.error)
+        assertEquals(networkError, err.error)
     }
 
     @Test

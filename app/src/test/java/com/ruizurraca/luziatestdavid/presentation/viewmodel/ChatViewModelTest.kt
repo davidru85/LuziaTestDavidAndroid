@@ -297,10 +297,11 @@ class ChatViewModelTest {
 
     @Test
     fun `stream error carrying AppError Internal emits Tier3 event`() = runTest {
+        val internalError = AppError.Internal()
         every { streamAssistantReply(any()) } returns flowOf(
             Resource.Error(
-                message = AppError.Internal.message,
-                error = AppError.Internal
+                message = internalError.message,
+                error = internalError
             )
         )
 
@@ -312,7 +313,7 @@ class ChatViewModelTest {
 
             val event = awaitItem()
             assertTrue(event is ChatEvent.Tier3) { "expected ChatEvent.Tier3, got $event" }
-            assertEquals(AppError.Internal.message, (event as ChatEvent.Tier3).message)
+            assertEquals(internalError.message, (event as ChatEvent.Tier3).message)
         }
 
         assertTrue(vm.state.value is ChatUiState.Idle)
@@ -320,10 +321,11 @@ class ChatViewModelTest {
 
     @Test
     fun `stream error carrying AppError BadRequest emits Tier1 event with AppError message`() = runTest {
+        val badRequest = AppError.BadRequest()
         every { streamAssistantReply(any()) } returns flowOf(
             Resource.Error(
-                message = AppError.BadRequest.message,
-                error = AppError.BadRequest
+                message = badRequest.message,
+                error = badRequest
             )
         )
 
@@ -335,7 +337,7 @@ class ChatViewModelTest {
 
             val event = awaitItem()
             assertTrue(event is ChatEvent.Tier1) { "expected ChatEvent.Tier1, got $event" }
-            assertEquals(AppError.BadRequest.message, (event as ChatEvent.Tier1).message)
+            assertEquals(badRequest.message, (event as ChatEvent.Tier1).message)
         }
     }
 

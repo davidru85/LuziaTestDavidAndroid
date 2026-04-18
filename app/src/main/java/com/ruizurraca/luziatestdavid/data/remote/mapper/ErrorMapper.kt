@@ -18,14 +18,14 @@ class ErrorMapper @Inject constructor(
 
     suspend fun fromThrowable(throwable: Throwable): AppError = when (throwable) {
         is HttpRequestTimeoutException,
-        is SocketTimeoutException -> AppError.Timeout
+        is SocketTimeoutException -> AppError.Timeout()
 
         is UnknownHostException,
-        is ConnectException -> AppError.Network
+        is ConnectException -> AppError.Network()
 
         is ResponseException -> throwable.classify()
 
-        is IOException -> AppError.Network
+        is IOException -> AppError.Network()
 
         else -> AppError.Unknown(
             rawCode = throwable::class.simpleName ?: "UNKNOWN",
@@ -47,10 +47,10 @@ class ErrorMapper @Inject constructor(
 
     private fun ResponseException.classifyByStatus(): AppError =
         when (val status = response.status.value) {
-            400 -> AppError.BadRequest
-            413 -> AppError.FileTooLarge
-            503 -> AppError.ServiceUnavailable
-            in 500..599 -> AppError.Internal
+            400 -> AppError.BadRequest()
+            413 -> AppError.FileTooLarge()
+            503 -> AppError.ServiceUnavailable()
+            in 500..599 -> AppError.Internal()
             else -> AppError.Unknown(
                 rawCode = status.toString(),
                 rawMessage = message.orFallback("HTTP $status")

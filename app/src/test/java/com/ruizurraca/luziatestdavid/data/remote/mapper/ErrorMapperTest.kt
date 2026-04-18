@@ -51,14 +51,14 @@ class ErrorMapperTest {
     fun `HttpRequestTimeoutException maps to Timeout`() = runTest {
         val exception = captureHttpTimeout()
 
-        assertSame(AppError.Timeout, mapper.fromThrowable(exception))
+        assertEquals(AppError.Timeout(), mapper.fromThrowable(exception))
     }
 
     @Test
     fun `SocketTimeoutException maps to Timeout`() = runTest {
         val exception = SocketTimeoutException("read timed out")
 
-        assertSame(AppError.Timeout, mapper.fromThrowable(exception))
+        assertEquals(AppError.Timeout(), mapper.fromThrowable(exception))
     }
 
     // endregion
@@ -69,21 +69,21 @@ class ErrorMapperTest {
     fun `UnknownHostException maps to Network`() = runTest {
         val exception = UnknownHostException("nodename nor servname provided")
 
-        assertSame(AppError.Network, mapper.fromThrowable(exception))
+        assertEquals(AppError.Network(), mapper.fromThrowable(exception))
     }
 
     @Test
     fun `ConnectException maps to Network`() = runTest {
         val exception = ConnectException("connection refused")
 
-        assertSame(AppError.Network, mapper.fromThrowable(exception))
+        assertEquals(AppError.Network(), mapper.fromThrowable(exception))
     }
 
     @Test
     fun `generic IOException maps to Network`() = runTest {
         val exception = IOException("socket reset")
 
-        assertSame(AppError.Network, mapper.fromThrowable(exception))
+        assertEquals(AppError.Network(), mapper.fromThrowable(exception))
     }
 
     // endregion
@@ -95,7 +95,7 @@ class ErrorMapperTest {
         val exception = captureHttpException(HttpStatusCode.BadRequest)
 
         assertTrue(exception is ClientRequestException)
-        assertSame(AppError.BadRequest, mapper.fromThrowable(exception))
+        assertEquals(AppError.BadRequest(), mapper.fromThrowable(exception))
     }
 
     @Test
@@ -103,7 +103,7 @@ class ErrorMapperTest {
         val exception = captureHttpException(HttpStatusCode.PayloadTooLarge)
 
         assertTrue(exception is ClientRequestException)
-        assertSame(AppError.FileTooLarge, mapper.fromThrowable(exception))
+        assertEquals(AppError.FileTooLarge(), mapper.fromThrowable(exception))
     }
 
     @Test
@@ -126,7 +126,7 @@ class ErrorMapperTest {
         val exception = captureHttpException(HttpStatusCode.ServiceUnavailable)
 
         assertTrue(exception is ServerResponseException)
-        assertSame(AppError.ServiceUnavailable, mapper.fromThrowable(exception))
+        assertEquals(AppError.ServiceUnavailable(), mapper.fromThrowable(exception))
     }
 
     @Test
@@ -134,7 +134,7 @@ class ErrorMapperTest {
         val exception = captureHttpException(HttpStatusCode.InternalServerError)
 
         assertTrue(exception is ServerResponseException)
-        assertSame(AppError.Internal, mapper.fromThrowable(exception))
+        assertEquals(AppError.Internal(), mapper.fromThrowable(exception))
     }
 
     @Test
@@ -142,7 +142,7 @@ class ErrorMapperTest {
         val exception = captureHttpException(HttpStatusCode.BadGateway)
 
         assertTrue(exception is ServerResponseException)
-        assertSame(AppError.Internal, mapper.fromThrowable(exception))
+        assertEquals(AppError.Internal(), mapper.fromThrowable(exception))
     }
 
     // endregion
@@ -196,7 +196,8 @@ class ErrorMapperTest {
 
             val result = mapper.fromThrowable(exception)
 
-            assertSame(AppError.ServiceUnavailable, result)
+            // Body says SERVICE_UNAVAILABLE with message "down" — preserved on the variant.
+            assertEquals(AppError.ServiceUnavailable(rawMessage = "down"), result)
         }
     }
 
@@ -206,7 +207,7 @@ class ErrorMapperTest {
 
         val result = mapper.fromThrowable(exception)
 
-        assertSame(AppError.BadRequest, result)
+        assertEquals(AppError.BadRequest(), result)
     }
 
     @Test
@@ -226,7 +227,7 @@ class ErrorMapperTest {
 
         val result = mapper.fromThrowable(exception)
 
-        assertSame(AppError.FileTooLarge, result)
+        assertEquals(AppError.FileTooLarge(), result)
     }
 
     // endregion

@@ -6,62 +6,93 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * RED-phase contract tests for `AppError.toChatEvent()`: routes each domain
- * error variant to its tier-appropriate UI event per `TECHNICAL_SPEC.md §Error
- * Handling`.
+ * Contract tests for `AppError.toChatEvent()`: routes each domain error variant
+ * to its tier-appropriate UI event per `TECHNICAL_SPEC.md §Error Handling`.
+ *
+ * Phase 7.2.A: the six formerly-singleton variants are now data classes that
+ * may carry a backend-supplied `rawMessage`. Tier routing is unchanged, but
+ * the `.message` surface now reflects the backend value when supplied.
  */
 class AppErrorToChatEventTest {
 
     @Test
     fun `BadRequest maps to Tier1 carrying the AppError message`() {
-        val event = AppError.BadRequest.toChatEvent()
+        val error = AppError.BadRequest()
+        val event = error.toChatEvent()
 
         assertTrue(event is ChatEvent.Tier1)
-        assertEquals(AppError.BadRequest.message, (event as ChatEvent.Tier1).message)
+        assertEquals(error.message, (event as ChatEvent.Tier1).message)
+    }
+
+    @Test
+    fun `BadRequest with backend-supplied message maps to Tier1 preserving that message`() {
+        val backendMessage = "Audio file is empty or too short to transcribe."
+        val error = AppError.BadRequest(rawMessage = backendMessage)
+
+        val event = error.toChatEvent()
+
+        assertTrue(event is ChatEvent.Tier1)
+        assertEquals(backendMessage, (event as ChatEvent.Tier1).message)
     }
 
     @Test
     fun `FileTooLarge maps to Tier1`() {
-        val event = AppError.FileTooLarge.toChatEvent()
+        val error = AppError.FileTooLarge()
+        val event = error.toChatEvent()
 
         assertTrue(event is ChatEvent.Tier1)
-        assertEquals(AppError.FileTooLarge.message, (event as ChatEvent.Tier1).message)
+        assertEquals(error.message, (event as ChatEvent.Tier1).message)
     }
 
     @Test
     fun `Timeout maps to Tier1 as Snackbar fallback for paths without inline bubble context`() {
-        val event = AppError.Timeout.toChatEvent()
+        val error = AppError.Timeout()
+        val event = error.toChatEvent()
 
         assertTrue(event is ChatEvent.Tier1)
-        assertEquals(AppError.Timeout.message, (event as ChatEvent.Tier1).message)
+        assertEquals(error.message, (event as ChatEvent.Tier1).message)
     }
 
     @Test
     fun `Network maps to Tier1`() {
-        val event = AppError.Network.toChatEvent()
+        val error = AppError.Network()
+        val event = error.toChatEvent()
 
         assertTrue(event is ChatEvent.Tier1)
-        assertEquals(AppError.Network.message, (event as ChatEvent.Tier1).message)
+        assertEquals(error.message, (event as ChatEvent.Tier1).message)
     }
 
     @Test
     fun `ServiceUnavailable maps to Tier3 with AppError message`() {
-        val event = AppError.ServiceUnavailable.toChatEvent()
+        val error = AppError.ServiceUnavailable()
+        val event = error.toChatEvent()
 
         assertTrue(event is ChatEvent.Tier3)
         val tier3 = event as ChatEvent.Tier3
         assertTrue(tier3.title.isNotBlank())
-        assertEquals(AppError.ServiceUnavailable.message, tier3.message)
+        assertEquals(error.message, tier3.message)
     }
 
     @Test
     fun `Internal maps to Tier3`() {
-        val event = AppError.Internal.toChatEvent()
+        val error = AppError.Internal()
+        val event = error.toChatEvent()
 
         assertTrue(event is ChatEvent.Tier3)
         val tier3 = event as ChatEvent.Tier3
         assertTrue(tier3.title.isNotBlank())
-        assertEquals(AppError.Internal.message, tier3.message)
+        assertEquals(error.message, tier3.message)
+    }
+
+    @Test
+    fun `Internal with backend-supplied message maps to Tier3 preserving that message`() {
+        val backendMessage = "Transcription service failed. Please try again."
+        val error = AppError.Internal(rawMessage = backendMessage)
+
+        val event = error.toChatEvent()
+
+        assertTrue(event is ChatEvent.Tier3)
+        assertEquals(backendMessage, (event as ChatEvent.Tier3).message)
     }
 
     @Test
