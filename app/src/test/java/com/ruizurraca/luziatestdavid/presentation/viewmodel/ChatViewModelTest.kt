@@ -16,6 +16,7 @@ import com.ruizurraca.luziatestdavid.domain.usecase.TranscribeAudioUseCase
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
 import com.ruizurraca.luziatestdavid.presentation.state.ProcessingKind
+import com.ruizurraca.luziatestdavid.presentation.state.Tier1Kind
 import com.ruizurraca.luziatestdavid.presentation.state.Tier3Kind
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -35,6 +36,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -177,8 +179,12 @@ class ChatViewModelTest {
         vm.events.test {
             vm.startRecording()
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Tier1 && event.message == "mic busy") {
-                "expected ChatEvent.Tier1('mic busy'), got $event"
+            assertTrue(
+                event is ChatEvent.Tier1 &&
+                    event.kind == Tier1Kind.Unknown &&
+                    event.backendMessage == "mic busy"
+            ) {
+                "expected legacy-path Tier1(Unknown, backendMessage='mic busy'), got $event"
             }
         }
 
@@ -218,8 +224,12 @@ class ChatViewModelTest {
             vm.stopRecording()
 
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Tier1 && event.message == "transcription failed") {
-                "expected ChatEvent.Tier1('transcription failed'), got $event"
+            assertTrue(
+                event is ChatEvent.Tier1 &&
+                    event.kind == Tier1Kind.Unknown &&
+                    event.backendMessage == "transcription failed"
+            ) {
+                "expected legacy-path Tier1(Unknown, backendMessage='transcription failed'), got $event"
             }
         }
 
@@ -288,8 +298,12 @@ class ChatViewModelTest {
             vm.onSendTap()
 
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Tier1 && event.message == "backend down") {
-                "expected ChatEvent.Tier1('backend down'), got $event"
+            assertTrue(
+                event is ChatEvent.Tier1 &&
+                    event.kind == Tier1Kind.Unknown &&
+                    event.backendMessage == "backend down"
+            ) {
+                "expected legacy-path Tier1(Unknown, backendMessage='backend down'), got $event"
             }
         }
 
@@ -340,7 +354,11 @@ class ChatViewModelTest {
 
             val event = awaitItem()
             assertTrue(event is ChatEvent.Tier1) { "expected ChatEvent.Tier1, got $event" }
-            assertEquals(badRequest.message, (event as ChatEvent.Tier1).message)
+            val tier1 = event as ChatEvent.Tier1
+            assertEquals(Tier1Kind.BadRequest, tier1.kind)
+            // Default BadRequest rawMessage → backendMessage is null (composable
+            // resolves the translated kind copy).
+            assertNull(tier1.backendMessage)
         }
     }
 

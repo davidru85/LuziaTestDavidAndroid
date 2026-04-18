@@ -33,6 +33,7 @@ import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
 import com.ruizurraca.luziatestdavid.presentation.component.LuziaAlertDialog
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
+import com.ruizurraca.luziatestdavid.presentation.state.Tier1Kind
 import com.ruizurraca.luziatestdavid.presentation.state.Tier3Kind
 import com.ruizurraca.luziatestdavid.presentation.viewmodel.ChatViewModel
 
@@ -47,16 +48,24 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var tier3Event by remember { mutableStateOf<ChatEvent.Tier3?>(null) }
 
+    val context = LocalContext.current
+
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                is ChatEvent.Tier1 -> snackbarHostState.showSnackbar(event.message)
+                is ChatEvent.Tier1 -> {
+                    // Prefer backend-supplied message when present (option iii —
+                    // backend copy often carries actionable specificity).
+                    // Otherwise resolve the semantic kind to translated copy.
+                    val text = event.backendMessage
+                        ?: context.getString(event.kind.messageRes())
+                    snackbarHostState.showSnackbar(text)
+                }
                 is ChatEvent.Tier3 -> tier3Event = event
             }
         }
     }
 
-    val context = LocalContext.current
     var showRationale by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -147,6 +156,27 @@ fun ChatScreen(
             }
         )
     }
+}
+
+private fun Tier1Kind.messageRes(): Int = when (this) {
+    Tier1Kind.BadRequest -> R.string.tier1_bad_request
+    Tier1Kind.FileTooLarge -> R.string.tier1_file_too_large
+    Tier1Kind.Timeout -> R.string.tier1_timeout
+    Tier1Kind.Network -> R.string.tier1_network
+    Tier1Kind.ValidationError -> R.string.tier1_validation_error
+    Tier1Kind.RecorderAlreadyRunning -> R.string.tier1_recorder_already_running
+    Tier1Kind.RecorderNotActive -> R.string.tier1_recorder_not_active
+    Tier1Kind.RecorderNoOutputFile -> R.string.tier1_recorder_no_output
+    Tier1Kind.RecorderStartFailed -> R.string.tier1_recorder_start_failed
+    Tier1Kind.RecorderStopFailed -> R.string.tier1_recorder_stop_failed
+    Tier1Kind.EmptyAudioFile -> R.string.tier1_empty_audio_file
+    Tier1Kind.EmptyConversationHistory -> R.string.tier1_empty_conversation_history
+    Tier1Kind.StreamingFailed -> R.string.tier1_streaming_failed
+    Tier1Kind.UnexpectedFailure -> R.string.tier1_unexpected_failure
+    // Unknown: reached when Resource.Error carried only a raw message with no
+    // AppError (legacy / test fixtures). Backend message should always be
+    // present on this path — the fallback is defensive.
+    Tier1Kind.Unknown -> R.string.tier1_unexpected_failure
 }
 
 private fun Tier3Kind.titleRes(): Int = when (this) {

@@ -16,6 +16,7 @@ import com.ruizurraca.luziatestdavid.presentation.model.toUiModels
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
 import com.ruizurraca.luziatestdavid.presentation.state.ProcessingKind
+import com.ruizurraca.luziatestdavid.presentation.state.Tier1Kind
 import com.ruizurraca.luziatestdavid.presentation.state.toChatEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -175,6 +176,16 @@ class ChatViewModel @Inject constructor(
         phase.value = Phase.Idle
     }
 
+    /**
+     * Route a `Resource.Error` to a tier-classified [ChatEvent]. When the error
+     * carries a populated [com.ruizurraca.luziatestdavid.domain.common.AppError],
+     * [toChatEvent] handles resolution. Otherwise (legacy / untyped errors — e.g.
+     * test fixtures) we surface the raw message as an Unknown Tier-1 so the
+     * composable shows it verbatim.
+     */
     private fun Resource.Error.toTieredEvent(): ChatEvent =
-        error?.toChatEvent() ?: ChatEvent.Tier1(message)
+        error?.toChatEvent() ?: ChatEvent.Tier1(
+            kind = Tier1Kind.Unknown,
+            backendMessage = message.takeIf { it.isNotBlank() }
+        )
 }
