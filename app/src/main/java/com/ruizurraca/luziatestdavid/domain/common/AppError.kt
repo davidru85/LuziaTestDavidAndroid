@@ -1,8 +1,8 @@
 package com.ruizurraca.luziatestdavid.domain.common
 
 sealed class AppError(
-    open val code: String,
-    open val message: String
+    val code: String,
+    val message: String
 ) {
     data object BadRequest : AppError(
         code = "BAD_REQUEST",

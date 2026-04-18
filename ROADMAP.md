@@ -68,6 +68,10 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 ### Phase 7: Polish & QA
 *Goal: Refine the UX and ensure robustness.*
 
+- [ ] **7.0 Error Classification (deferred from Phase 5.5 — Fork 3):** Implement the 3-Tier error strategy end-to-end per `TECHNICAL_SPEC.md §Error Handling`.
+    - [x] **7.0.A** Domain: `AppError` sealed class (`BadRequest` / `FileTooLarge` / `Timeout` / `Network` / `ServiceUnavailable` / `Internal` / `Unknown`) + `AppError.fromCode(...)` factory; extend `Resource.Error` with optional `error: AppError?`. Domain purity preserved.
+    - [ ] **7.0.B** Data: map Ktor/IO failures + SSE `event: error` → `AppError.*` in `ChatRepositoryImpl`; MockEngine-driven tests per code path.
+    - [ ] **7.0.C** Presentation: extend `ChatEvent` with `Tier1` / `Tier3` subtypes (Tier-2 stays on `MessageStatus.FAILED` inline bubble); add `AppError.toChatEvent()` mapper; `ChatScreen` renders Tier-3 via `AlertDialog`.
 - [ ] 7.1 **End-to-End:** Manual test: Record $\rightarrow$ Transcribe $\rightarrow$ Stream $\rightarrow$ Display.
 - [ ] 7.2 **Edge Cases:** Test empty audio, network loss, and extremely long AI responses.
 - [ ] 7.3 **Accessibility:** Verify `TalkBack` support and `contentDescription` updates.
