@@ -24,6 +24,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -367,6 +368,23 @@ class ChatViewModelTest {
     }
 
     // ----- Clear conversation ------------------------------------------------
+
+    // region Phase 7.4.B — defensive recorder release on VM clear
+
+    @Test
+    fun `onCleared releases the audio recorder so background recordings are torn down`() = runTest {
+        every { audioRecorder.release() } just Runs
+        val vm = createViewModel()
+
+        // Invoke the lifecycle hook directly — the override is widened to public
+        // so tests can simulate what the framework does when the owning Activity
+        // is destroyed while a recording is still in flight.
+        vm.onCleared()
+
+        verify(exactly = 1) { audioRecorder.release() }
+    }
+
+    // endregion
 
     @Test
     fun `onClearConversation delegates to repository`() = runTest {
