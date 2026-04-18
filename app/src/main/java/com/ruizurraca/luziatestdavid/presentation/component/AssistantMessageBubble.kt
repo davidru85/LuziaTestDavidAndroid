@@ -23,7 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -59,8 +61,14 @@ private fun AssistantBubbleContent(
 ) {
     when (model.streamState) {
         AssistantStreamState.LOADING -> LoadingLines()
-        AssistantStreamState.STREAMING,
-        AssistantStreamState.RECEIVED -> AssistantText(model.content)
+        AssistantStreamState.STREAMING -> AssistantText(
+            content = model.content,
+            announceChanges = true
+        )
+        AssistantStreamState.RECEIVED -> AssistantText(
+            content = model.content,
+            announceChanges = false
+        )
         AssistantStreamState.FAILED -> FailedIndicator(onRetry = onRetry)
     }
 }
@@ -72,7 +80,13 @@ private fun LoadingLines() {
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 12.dp)
-            .semantics { contentDescription = loadingDescription }
+            // LOADING + STREAMING are live regions so TalkBack announces "Loading
+            // response" when the shimmer appears and the tokens as they stream in.
+            // RECEIVED and FAILED are not, to avoid re-announcing history on scroll.
+            .semantics {
+                contentDescription = loadingDescription
+                liveRegion = LiveRegionMode.Polite
+            }
     ) {
         ShimmerBox(modifier = Modifier.fillMaxWidth().height(12.dp))
         ShimmerBox(modifier = Modifier.fillMaxWidth().height(12.dp))
@@ -81,12 +95,18 @@ private fun LoadingLines() {
 }
 
 @Composable
-private fun AssistantText(content: String) {
+private fun AssistantText(content: String, announceChanges: Boolean) {
+    val baseModifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+    val modifier = if (announceChanges) {
+        baseModifier.semantics { liveRegion = LiveRegionMode.Polite }
+    } else {
+        baseModifier
+    }
     Text(
         text = content,
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+        modifier = modifier
     )
 }
 
