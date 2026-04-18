@@ -120,7 +120,10 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
             - **H.2** — new `Tier1Kind` enum covering all 14 classifiable Tier-1 cases + an `Unknown` fallback for legacy paths. `ChatEvent.Tier1(message)` → `ChatEvent.Tier1(kind, backendMessage?)`. `AppError.toChatEvent()` now produces kind-based events; when backend supplied a message that diverges from the AppError default, it rides through as `backendMessage`. `ChatScreen` Snackbar branch resolves kind → `context.getString` (per composable's locale), preferring `backendMessage` when present.
             - **H.3** — 14 new translatable Tier-1 strings (`tier1_bad_request`, `tier1_recorder_start_failed`, etc.) with full peninsular-Spanish + European-Portuguese translations. Per-locale pinning tests added (14 × 3 locales = 42 new assertions).
         - Final state: **440 unit tests**, domain + presentation purity, `assembleStagingDebug` — all green.
-- [ ] 7.4 **Cleanup:** Delete temporary `.m4a` files and `MediaRecorder` resource release.
+- [x] **7.4 Cleanup** — shipped. Two targeted hygiene changes:
+    - **7.4.A** `ChatViewModel.stopRecording()` wraps the `transcribeAudio` call in `try { ... } finally { audioFile.delete() }`, so the temp `.m4a` in `context.cacheDir/audio/` is removed regardless of transcription outcome. Prevents unbounded cache growth after repeated recordings.
+    - **7.4.B** `AudioRecorder` interface gains non-suspend `release()`. `MediaRecorderAudioRecorder.release()` releases the in-flight `MediaRecorder` + deletes the temp file if recording was still active. `ChatViewModel` widens `onCleared()` to `public` and calls `audioRecorder.release()`, so backgrounding mid-recording doesn't leave the `MediaRecorder` holding the microphone. New `verify`-based VM test guards the lifecycle wiring.
+    - Final state: **441 unit tests**, domain + presentation purity, `assembleStagingDebug` — all green.
 
 ### Phase 8: Hilt Test Infrastructure & `MainActivity` Smoke Test
 *Goal: establish the project's first activity-level, DI-wired test graph, and use it to smoke-test `MainActivity` end-to-end under Robolectric.*
