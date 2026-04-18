@@ -10,9 +10,13 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.request.get
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -33,7 +37,13 @@ import java.net.UnknownHostException
  */
 class ErrorMapperTest {
 
-    private val mapper = ErrorMapper()
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        explicitNulls = false
+    }
+
+    private val mapper = ErrorMapper(json = json)
 
     // region Timeout family
 
@@ -45,7 +55,7 @@ class ErrorMapperTest {
     }
 
     @Test
-    fun `SocketTimeoutException maps to Timeout`() {
+    fun `SocketTimeoutException maps to Timeout`() = runTest {
         val exception = SocketTimeoutException("read timed out")
 
         assertSame(AppError.Timeout, mapper.fromThrowable(exception))
@@ -56,21 +66,21 @@ class ErrorMapperTest {
     // region Network family
 
     @Test
-    fun `UnknownHostException maps to Network`() {
+    fun `UnknownHostException maps to Network`() = runTest {
         val exception = UnknownHostException("nodename nor servname provided")
 
         assertSame(AppError.Network, mapper.fromThrowable(exception))
     }
 
     @Test
-    fun `ConnectException maps to Network`() {
+    fun `ConnectException maps to Network`() = runTest {
         val exception = ConnectException("connection refused")
 
         assertSame(AppError.Network, mapper.fromThrowable(exception))
     }
 
     @Test
-    fun `generic IOException maps to Network`() {
+    fun `generic IOException maps to Network`() = runTest {
         val exception = IOException("socket reset")
 
         assertSame(AppError.Network, mapper.fromThrowable(exception))
@@ -140,7 +150,7 @@ class ErrorMapperTest {
     // region Unknown fallback
 
     @Test
-    fun `unclassified Throwable falls back to Unknown preserving class name and message`() {
+    fun `unclassified Throwable falls back to Unknown preserving class name and message`() = runTest {
         val exception = RuntimeException("weird state")
 
         val result = mapper.fromThrowable(exception)
@@ -151,13 +161,72 @@ class ErrorMapperTest {
     }
 
     @Test
-    fun `unclassified Throwable with null message still maps to Unknown with non-blank message`() {
+    fun `unclassified Throwable with null message still maps to Unknown with non-blank message`() = runTest {
         val exception = RuntimeException()
 
         val result = mapper.fromThrowable(exception)
 
         assertTrue(result is AppError.Unknown)
         assertTrue(result.message.isNotBlank())
+    }
+
+    // endregion
+
+    // region Body envelope parsing (Fork 4 addendum §6 — 7.1.3.D)
+
+    @Test
+    fun `422 with VALIDATION_ERROR envelope maps to ValidationError preserving backend message`() = runTest {
+        val backendMessage = "user messages must include role_prompt."
+        val body = """{"error":{"code":"VALIDATION_ERROR","message":"$backendMessage"}}"""
+        val exception = captureHttpExceptionWithBody(HttpStatusCode.UnprocessableEntity, body)
+
+        val result = mapper.fromThrowable(exception)
+
+        assertTrue(result is AppError.ValidationError) { "expected ValidationError, got $result" }
+        assertEquals(backendMessage, result.message)
+    }
+
+    @Test
+    fun `4xx parseable envelope takes precedence over status-based mapping`() {
+        runTest {
+            // Status 400 would normally map to BadRequest, but the envelope says SERVICE_UNAVAILABLE.
+            // Body is authoritative.
+            val body = """{"error":{"code":"SERVICE_UNAVAILABLE","message":"down"}}"""
+            val exception = captureHttpExceptionWithBody(HttpStatusCode.BadRequest, body)
+
+            val result = mapper.fromThrowable(exception)
+
+            assertSame(AppError.ServiceUnavailable, result)
+        }
+    }
+
+    @Test
+    fun `4xx with unparseable body falls back to status-based mapping`() = runTest {
+        val exception = captureHttpExceptionWithBody(HttpStatusCode.BadRequest, "this is not json")
+
+        val result = mapper.fromThrowable(exception)
+
+        assertSame(AppError.BadRequest, result)
+    }
+
+    @Test
+    fun `5xx with VALIDATION_ERROR envelope maps to ValidationError (body takes precedence)`() = runTest {
+        val body = """{"error":{"code":"VALIDATION_ERROR","message":"late validation"}}"""
+        val exception = captureHttpExceptionWithBody(HttpStatusCode.InternalServerError, body)
+
+        val result = mapper.fromThrowable(exception)
+
+        assertTrue(result is AppError.ValidationError) { "expected ValidationError, got $result" }
+        assertEquals("late validation", result.message)
+    }
+
+    @Test
+    fun `4xx with empty body falls back to status-based mapping (regression guard for existing behaviour)`() = runTest {
+        val exception = captureHttpException(HttpStatusCode.PayloadTooLarge)
+
+        val result = mapper.fromThrowable(exception)
+
+        assertSame(AppError.FileTooLarge, result)
     }
 
     // endregion
@@ -170,6 +239,35 @@ class ErrorMapperTest {
      */
     private suspend fun captureHttpException(status: HttpStatusCode): ResponseException {
         val client = HttpClient(MockEngine { respond(content = "", status = status) }) {
+            expectSuccess = true
+        }
+        return try {
+            client.get("http://test/")
+            error("Expected ResponseException for status $status")
+        } catch (e: ResponseException) {
+            e
+        } finally {
+            client.close()
+        }
+    }
+
+    /**
+     * Same as [captureHttpException] but with an explicit JSON response body —
+     * used to exercise the backend-envelope parsing path in [ErrorMapper].
+     */
+    private suspend fun captureHttpExceptionWithBody(
+        status: HttpStatusCode,
+        body: String
+    ): ResponseException {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = body,
+                    status = status,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                )
+            }
+        ) {
             expectSuccess = true
         }
         return try {
