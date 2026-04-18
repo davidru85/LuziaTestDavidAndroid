@@ -172,6 +172,35 @@ class AssistantMessageBubbleTest {
         assertEquals(1, retries)
     }
 
+    // region Phase 7.3.3.B — FAILED bubble friendly copy (latest vs older)
+
+    @Test
+    fun failed_withOnRetry_showsGoneBlankCopy() {
+        // The LATEST failed assistant turn is retryable — show the "gone blank" prompt
+        // that invites the user to tap retry.
+        setBubble(
+            model = assistant(streamState = AssistantStreamState.FAILED),
+            onRetry = {}
+        )
+
+        composeTestRule.onNodeWithText("I've gone blank. Mind retrying?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Sorry, empty message").assertDoesNotExist()
+    }
+
+    @Test
+    fun failed_withoutOnRetry_showsEmptyMessageCopy() {
+        // Older failed assistant turns aren't retryable — show the apologetic copy only.
+        setBubble(
+            model = assistant(streamState = AssistantStreamState.FAILED),
+            onRetry = null
+        )
+
+        composeTestRule.onNodeWithText("Sorry, empty message").assertIsDisplayed()
+        composeTestRule.onNodeWithText("I've gone blank. Mind retrying?").assertDoesNotExist()
+    }
+
+    // endregion
+
     // region Phase 7.3.1.B — LiveRegion.Polite for TalkBack announcements
 
     @Test

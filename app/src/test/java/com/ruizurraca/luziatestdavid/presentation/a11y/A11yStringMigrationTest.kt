@@ -152,4 +152,24 @@ class A11yStringMigrationTest {
     }
 
     // endregion
+
+    // region Failed assistant bubble copy (Phase 7.3.3.B)
+
+    @Test
+    fun `bubble_failed_latest_message matches expected English value`() {
+        assertEquals(
+            "I've gone blank. Mind retrying?",
+            context.getString(R.string.bubble_failed_latest_message)
+        )
+    }
+
+    @Test
+    fun `bubble_failed_older_message matches expected English value`() {
+        assertEquals(
+            "Sorry, empty message",
+            context.getString(R.string.bubble_failed_older_message)
+        )
+    }
+
+    // endregion
 }
