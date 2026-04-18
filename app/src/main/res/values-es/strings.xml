@@ -7,6 +7,22 @@
     <string name="label_transcribing">Transcribiendo…</string>
     <string name="label_thinking">Pensando…</string>
 
+    <!-- Tier-1 Snackbar copy (Phase 7.3.3.H) -->
+    <string name="tier1_bad_request">La solicitud no es válida.</string>
+    <string name="tier1_file_too_large">El archivo de audio es demasiado grande.</string>
+    <string name="tier1_timeout">La solicitud ha caducado.</string>
+    <string name="tier1_network">Error de conexión de red.</string>
+    <string name="tier1_validation_error">Revisa los datos introducidos e inténtalo de nuevo.</string>
+    <string name="tier1_recorder_already_running">Ya hay una grabación en curso.</string>
+    <string name="tier1_recorder_not_active">No hay ninguna grabación activa.</string>
+    <string name="tier1_recorder_no_output">No hay archivo de salida para la grabación.</string>
+    <string name="tier1_recorder_start_failed">No se ha podido iniciar la grabación. Inténtalo de nuevo.</string>
+    <string name="tier1_recorder_stop_failed">No se ha podido detener la grabación. Inténtalo de nuevo.</string>
+    <string name="tier1_empty_audio_file">El archivo de audio está vacío. Graba de nuevo, por favor.</string>
+    <string name="tier1_empty_conversation_history">Empieza una conversación primero.</string>
+    <string name="tier1_streaming_failed">Se ha interrumpido la transmisión de la respuesta. Inténtalo de nuevo.</string>
+    <string name="tier1_unexpected_failure">Algo ha fallado. Inténtalo de nuevo.</string>
+
     <string-array name="role_names">
         <item>Estudiante</item>
         <item>Científico</item>
