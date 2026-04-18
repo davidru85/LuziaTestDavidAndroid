@@ -9,7 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -110,10 +110,12 @@ fun ChatScreen(
     )
 
     if (showRationale) {
-        AlertDialog(
+        LuziaAlertDialog(
             onDismissRequest = { showRationale = false },
-            title = { Text(stringResource(R.string.dialog_mic_permission_title)) },
-            text = { Text(stringResource(R.string.dialog_mic_permission_message)) },
+            title = stringResource(R.string.dialog_mic_permission_title),
+            body = stringResource(R.string.dialog_mic_permission_message),
+            icon = Icons.Filled.Mic,
+            iconTint = MaterialTheme.colorScheme.primary,
             confirmButton = {
                 TextButton(onClick = {
                     showRationale = false
