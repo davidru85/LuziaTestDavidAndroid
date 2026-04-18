@@ -2,6 +2,11 @@
     <!-- Neutral European Portuguese translations (Phase 7.3.3.F). See MEMORY.md
          §Phase 7.3.3 for translation style notes + Fork 4 role_prompts risk note. -->
 
+    <!-- Streaming indicator labels (Phase 7.3.3.G) -->
+    <string name="label_recording">A gravar…</string>
+    <string name="label_transcribing">A transcrever…</string>
+    <string name="label_thinking">A pensar…</string>
+
     <string-array name="role_names">
         <item>Estudante</item>
         <item>Cientista</item>

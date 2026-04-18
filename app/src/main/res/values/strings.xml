@@ -1,5 +1,11 @@
 <resources>
     <string name="app_name">Luzia Test David</string>
+    <string name="app_title" translatable="false">Luzia</string>
+
+    <!-- Streaming indicator labels (Phase 7.3.3.G) -->
+    <string name="label_recording">Recording…</string>
+    <string name="label_transcribing">Transcribing…</string>
+    <string name="label_thinking">Thinking…</string>
 
     <string-array name="role_names">
         <item>Student</item>

@@ -2,6 +2,11 @@
     <!-- Peninsular Spanish translations (Phase 7.3.3.F). See MEMORY.md §Phase 7.3.3
          for translation style notes + Fork 4 role_prompts risk note. -->
 
+    <!-- Streaming indicator labels (Phase 7.3.3.G) -->
+    <string name="label_recording">Grabando…</string>
+    <string name="label_transcribing">Transcribiendo…</string>
+    <string name="label_thinking">Pensando…</string>
+
     <string-array name="role_names">
         <item>Estudiante</item>
         <item>Científico</item>
