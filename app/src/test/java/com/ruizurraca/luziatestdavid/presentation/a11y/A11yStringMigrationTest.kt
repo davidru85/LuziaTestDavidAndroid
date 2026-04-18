@@ -172,4 +172,66 @@ class A11yStringMigrationTest {
     }
 
     // endregion
+
+    // region Tier-3 AlertDialog copy (Phase 7.3.3.C)
+
+    @Test
+    fun `dialog_tier3_service_unavailable_title matches expected English value`() {
+        assertEquals(
+            "Service unavailable",
+            context.getString(R.string.dialog_tier3_service_unavailable_title)
+        )
+    }
+
+    @Test
+    fun `dialog_tier3_service_unavailable_body matches expected English value`() {
+        assertEquals(
+            "We can't reach Luzia right now. Please try again in a moment.",
+            context.getString(R.string.dialog_tier3_service_unavailable_body)
+        )
+    }
+
+    @Test
+    fun `dialog_tier3_internal_title matches expected English value`() {
+        assertEquals(
+            "Something went wrong",
+            context.getString(R.string.dialog_tier3_internal_title)
+        )
+    }
+
+    @Test
+    fun `dialog_tier3_internal_body matches expected English value`() {
+        assertEquals(
+            "Luzia hit an unexpected error. You can try sending your message again.",
+            context.getString(R.string.dialog_tier3_internal_body)
+        )
+    }
+
+    @Test
+    fun `dialog_tier3_unexpected_title matches expected English value`() {
+        assertEquals(
+            "Unexpected error",
+            context.getString(R.string.dialog_tier3_unexpected_title)
+        )
+    }
+
+    @Test
+    fun `dialog_tier3_unexpected_body matches expected English value`() {
+        assertEquals(
+            "Something we didn't anticipate happened. Please try again — if it keeps happening, let us know.",
+            context.getString(R.string.dialog_tier3_unexpected_body)
+        )
+    }
+
+    @Test
+    fun `dialog_tier3_show_details matches expected English value`() {
+        assertEquals("Show details", context.getString(R.string.dialog_tier3_show_details))
+    }
+
+    @Test
+    fun `dialog_tier3_hide_details matches expected English value`() {
+        assertEquals("Hide details", context.getString(R.string.dialog_tier3_hide_details))
+    }
+
+    // endregion
 }

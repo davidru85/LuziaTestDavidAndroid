@@ -16,6 +16,7 @@ import com.ruizurraca.luziatestdavid.domain.usecase.TranscribeAudioUseCase
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
 import com.ruizurraca.luziatestdavid.presentation.state.ProcessingKind
+import com.ruizurraca.luziatestdavid.presentation.state.Tier3Kind
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -296,7 +297,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `stream error carrying AppError Internal emits Tier3 event`() = runTest {
+    fun `stream error carrying AppError Internal emits Tier3 event with InternalError kind`() = runTest {
         val internalError = AppError.Internal()
         every { streamAssistantReply(any()) } returns flowOf(
             Resource.Error(
@@ -313,7 +314,9 @@ class ChatViewModelTest {
 
             val event = awaitItem()
             assertTrue(event is ChatEvent.Tier3) { "expected ChatEvent.Tier3, got $event" }
-            assertEquals(internalError.message, (event as ChatEvent.Tier3).message)
+            val tier3 = event as ChatEvent.Tier3
+            assertEquals(Tier3Kind.InternalError, tier3.kind)
+            assertEquals(internalError.message, tier3.detailsMessage)
         }
 
         assertTrue(vm.state.value is ChatUiState.Idle)
