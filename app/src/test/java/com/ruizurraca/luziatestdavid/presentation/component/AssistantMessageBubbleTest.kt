@@ -1,5 +1,9 @@
 package com.ruizurraca.luziatestdavid.presentation.component
 
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -167,4 +171,62 @@ class AssistantMessageBubbleTest {
 
         assertEquals(1, retries)
     }
+
+    // region Phase 7.3.1.B — LiveRegion.Polite for TalkBack announcements
+
+    @Test
+    fun loading_bubble_marksLiveRegionPolite_forTalkBack() {
+        // When the shimmer appears, TalkBack should announce "Loading response"
+        // so the user knows the reply is being generated.
+        setBubble(assistant(streamState = AssistantStreamState.LOADING))
+
+        composeTestRule
+            .onAllNodes(isPoliteLiveRegion())
+            .assertCountEquals(1)
+    }
+
+    @Test
+    fun streaming_textBubble_marksLiveRegionPolite_forTalkBack() {
+        // While tokens stream in, TalkBack should announce each content update.
+        setBubble(
+            assistant(
+                content = "La fotosíntesis es",
+                streamState = AssistantStreamState.STREAMING
+            )
+        )
+
+        composeTestRule
+            .onAllNodes(isPoliteLiveRegion())
+            .assertCountEquals(1)
+    }
+
+    @Test
+    fun received_textBubble_doesNotMarkLiveRegion() {
+        // Historical RECEIVED messages shouldn't be re-announced by TalkBack when
+        // the user scrolls them back into view.
+        setBubble(
+            assistant(
+                content = "La fotosíntesis es el proceso por el cual las plantas convierten la luz solar en energía.",
+                streamState = AssistantStreamState.RECEIVED
+            )
+        )
+
+        composeTestRule
+            .onAllNodes(isPoliteLiveRegion())
+            .assertCountEquals(0)
+    }
+
+    @Test
+    fun failed_bubble_doesNotMarkLiveRegion() {
+        setBubble(assistant(streamState = AssistantStreamState.FAILED), onRetry = {})
+
+        composeTestRule
+            .onAllNodes(isPoliteLiveRegion())
+            .assertCountEquals(0)
+    }
+
+    private fun isPoliteLiveRegion(): SemanticsMatcher =
+        SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
+
+    // endregion
 }
