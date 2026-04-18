@@ -3,6 +3,7 @@ package com.ruizurraca.luziatestdavid.presentation.viewmodel
 import app.cash.turbine.test
 import com.ruizurraca.luziatestdavid.domain.audio.AudioRecorder
 import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
+import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.model.MessageRole
@@ -175,8 +176,8 @@ class ChatViewModelTest {
         vm.events.test {
             vm.startRecording()
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Error && event.message == "mic busy") {
-                "expected ChatEvent.Error('mic busy'), got $event"
+            assertTrue(event is ChatEvent.Tier1 && event.message == "mic busy") {
+                "expected ChatEvent.Tier1('mic busy'), got $event"
             }
         }
 
@@ -216,8 +217,8 @@ class ChatViewModelTest {
             vm.stopRecording()
 
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Error && event.message == "transcription failed") {
-                "expected ChatEvent.Error('transcription failed'), got $event"
+            assertTrue(event is ChatEvent.Tier1 && event.message == "transcription failed") {
+                "expected ChatEvent.Tier1('transcription failed'), got $event"
             }
         }
 
@@ -286,12 +287,56 @@ class ChatViewModelTest {
             vm.onSendTap()
 
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Error && event.message == "backend down") {
-                "expected ChatEvent.Error('backend down'), got $event"
+            assertTrue(event is ChatEvent.Tier1 && event.message == "backend down") {
+                "expected ChatEvent.Tier1('backend down'), got $event"
             }
         }
 
         assertTrue(vm.state.value is ChatUiState.Idle)
+    }
+
+    @Test
+    fun `stream error carrying AppError Internal emits Tier3 event`() = runTest {
+        every { streamAssistantReply(any()) } returns flowOf(
+            Resource.Error(
+                message = AppError.Internal.message,
+                error = AppError.Internal
+            )
+        )
+
+        val vm = createViewModel()
+
+        vm.events.test {
+            vm.onDraftChange("hola")
+            vm.onSendTap()
+
+            val event = awaitItem()
+            assertTrue(event is ChatEvent.Tier3) { "expected ChatEvent.Tier3, got $event" }
+            assertEquals(AppError.Internal.message, (event as ChatEvent.Tier3).message)
+        }
+
+        assertTrue(vm.state.value is ChatUiState.Idle)
+    }
+
+    @Test
+    fun `stream error carrying AppError BadRequest emits Tier1 event with AppError message`() = runTest {
+        every { streamAssistantReply(any()) } returns flowOf(
+            Resource.Error(
+                message = AppError.BadRequest.message,
+                error = AppError.BadRequest
+            )
+        )
+
+        val vm = createViewModel()
+
+        vm.events.test {
+            vm.onDraftChange("hola")
+            vm.onSendTap()
+
+            val event = awaitItem()
+            assertTrue(event is ChatEvent.Tier1) { "expected ChatEvent.Tier1, got $event" }
+            assertEquals(AppError.BadRequest.message, (event as ChatEvent.Tier1).message)
+        }
     }
 
     // ----- Clear conversation ------------------------------------------------

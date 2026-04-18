@@ -1,5 +1,6 @@
 package com.ruizurraca.luziatestdavid.di
 
+import android.util.Log
 import com.ruizurraca.luziatestdavid.BuildConfig
 import dagger.Module
 import dagger.Provides
@@ -10,6 +11,7 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.url
 import io.ktor.serialization.kotlinx.json.json
@@ -25,6 +27,7 @@ object NetworkModule {
     fun provideJson(): Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
+        explicitNulls = false
     }
 
     @Provides
@@ -34,8 +37,15 @@ object NetworkModule {
         install(ContentNegotiation) {
             json(json)
         }
-        install(Logging) {
-            level = if (BuildConfig.DEBUG) LogLevel.BODY else LogLevel.NONE
+        if (BuildConfig.DEBUG) {
+            install(Logging) {
+                logger = object : Logger {
+                    override fun log(message: String) {
+                        Log.d("KtorClient", message)
+                    }
+                }
+                level = LogLevel.ALL
+            }
         }
         defaultRequest {
             url(BuildConfig.BASE_URL)

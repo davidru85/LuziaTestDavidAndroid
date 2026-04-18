@@ -6,7 +6,9 @@ import com.ruizurraca.luziatestdavid.data.local.entity.ChatMessageEntity
 import com.ruizurraca.luziatestdavid.data.remote.api.L1ApiClient
 import com.ruizurraca.luziatestdavid.data.remote.dto.TranscribeResponseDto
 import com.ruizurraca.luziatestdavid.data.remote.mapper.ChatMapper
+import com.ruizurraca.luziatestdavid.data.remote.mapper.ErrorMapper
 import com.ruizurraca.luziatestdavid.data.remote.sse.SseParser
+import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.model.MessageRole
@@ -46,6 +48,7 @@ class ChatRepositoryImplTest {
     private val apiClient: L1ApiClient = mockk()
     private val sseParser = SseParser()
     private val chatMapper = ChatMapper()
+    private val errorMapper = ErrorMapper()
     private val dao: ChatMessageDao = mockk()
     private val dispatcher = UnconfinedTestDispatcher()
 
@@ -53,6 +56,7 @@ class ChatRepositoryImplTest {
         apiClient = apiClient,
         sseParser = sseParser,
         chatMapper = chatMapper,
+        errorMapper = errorMapper,
         dao = dao,
         ioDispatcher = dispatcher
     )
@@ -75,7 +79,7 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun `transcribeAudio wraps thrown exception as Resource Error`() = runTest(dispatcher) {
+    fun `transcribeAudio wraps IOException as Resource Error carrying AppError Network`() = runTest(dispatcher) {
         val audioFile = File.createTempFile("audio", ".m4a").apply {
             writeBytes(byteArrayOf(0x1))
             deleteOnExit()
@@ -85,14 +89,19 @@ class ChatRepositoryImplTest {
         val result = repository.transcribeAudio(audioFile)
 
         assertTrue(result is Resource.Error)
+        val error = result as Resource.Error
+        assertEquals(AppError.Network, error.error)
     }
 
     // endregion
 
     // region streamChat
 
+    private val tutorPrompt = "You are a patient, educational tutor. " +
+        "Explain concepts step by step and encourage learning."
+
     private val userHistory = listOf(
-        ChatMessage("u1", MessageRole.USER, "Hi", 1L)
+        ChatMessage("u1", MessageRole.USER, "Hi", 1L, personaPrompt = tutorPrompt)
     )
 
     @Test
@@ -114,7 +123,7 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun `streamChat emits Resource Error for SSE error event`() = runTest(dispatcher) {
+    fun `streamChat emits Resource Error carrying AppError Internal for SSE error event with INTERNAL_ERROR code`() = runTest(dispatcher) {
         every { apiClient.streamChat(any()) } returns flowOf(
             "event: error",
             "data: {\"code\":\"INTERNAL_ERROR\",\"message\":\"boom\"}",
@@ -124,12 +133,31 @@ class ChatRepositoryImplTest {
         repository.streamChat(userHistory).test {
             val emission = awaitItem()
             assertTrue(emission is Resource.Error) { "expected Error, got $emission" }
+            val error = emission as Resource.Error
+            assertEquals(AppError.Internal, error.error)
             awaitComplete()
         }
     }
 
     @Test
-    fun `streamChat emits Resource Error when transport throws mid-stream`() = runTest(dispatcher) {
+    fun `streamChat emits Resource Error carrying AppError ServiceUnavailable for SSE error with SERVICE_UNAVAILABLE code`() = runTest(dispatcher) {
+        every { apiClient.streamChat(any()) } returns flowOf(
+            "event: error",
+            "data: {\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"down\"}",
+            ""
+        )
+
+        repository.streamChat(userHistory).test {
+            val emission = awaitItem()
+            assertTrue(emission is Resource.Error)
+            val error = emission as Resource.Error
+            assertEquals(AppError.ServiceUnavailable, error.error)
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `streamChat emits Resource Error carrying AppError Network when transport throws IOException mid-stream`() = runTest(dispatcher) {
         every { apiClient.streamChat(any()) } returns flow {
             emit("data: partial")
             emit("")
@@ -140,6 +168,8 @@ class ChatRepositoryImplTest {
             assertEquals(Resource.Success("partial"), awaitItem())
             val tail = awaitItem()
             assertTrue(tail is Resource.Error) { "expected Error, got $tail" }
+            val error = tail as Resource.Error
+            assertEquals(AppError.Network, error.error)
             awaitComplete()
         }
     }

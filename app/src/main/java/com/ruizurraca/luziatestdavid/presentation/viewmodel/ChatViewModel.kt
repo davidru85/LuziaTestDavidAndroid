@@ -16,6 +16,7 @@ import com.ruizurraca.luziatestdavid.presentation.model.toUiModels
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
 import com.ruizurraca.luziatestdavid.presentation.state.ProcessingKind
+import com.ruizurraca.luziatestdavid.presentation.state.toChatEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -87,7 +88,7 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = audioRecorder.start()) {
                 is Resource.Success -> phase.value = Phase.Listening
-                is Resource.Error -> _events.tryEmit(ChatEvent.Error(result.message))
+                is Resource.Error -> _events.tryEmit(result.toTieredEvent())
             }
         }
     }
@@ -99,12 +100,10 @@ class ChatViewModel @Inject constructor(
                 is Resource.Success -> {
                     when (val transcribeResult = transcribeAudio(stopResult.data)) {
                         is Resource.Success -> draft.value = transcribeResult.data
-                        is Resource.Error -> _events.tryEmit(
-                            ChatEvent.Error(transcribeResult.message)
-                        )
+                        is Resource.Error -> _events.tryEmit(transcribeResult.toTieredEvent())
                     }
                 }
-                is Resource.Error -> _events.tryEmit(ChatEvent.Error(stopResult.message))
+                is Resource.Error -> _events.tryEmit(stopResult.toTieredEvent())
             }
             phase.value = Phase.Idle
         }
@@ -168,11 +167,14 @@ class ChatViewModel @Inject constructor(
             when (resource) {
                 is Resource.Success -> phase.value = Phase.Streaming
                 is Resource.Error -> {
-                    _events.tryEmit(ChatEvent.Error(resource.message))
+                    _events.tryEmit(resource.toTieredEvent())
                     phase.value = Phase.Idle
                 }
             }
         }
         phase.value = Phase.Idle
     }
+
+    private fun Resource.Error.toTieredEvent(): ChatEvent =
+        error?.toChatEvent() ?: ChatEvent.Tier1(message)
 }
