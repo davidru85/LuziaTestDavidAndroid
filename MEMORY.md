@@ -94,6 +94,36 @@ Manual E2E testing (Phase 7.1.2) against the backend returned `422 VALIDATION_ER
 
 **Deferred (Phase 7.1.4):** empty-`content` assistant rows observed lingering in Room after failed streams — a separate, client-only defect unrelated to the wire-format change.
 
+### Fork 5 — `/transcribe` contract revision for empty / too-short audio (2026-04-18, API_SPEC v1.2.0)
+
+Manual Phase 7.2 edge-case testing against the backend revealed — and the backend team then fixed — a contract defect on `/transcribe`:
+
+**Before (v1.1.0):** empty or too-short audio surfaced as `502 UPSTREAM_ERROR` ("Transcription service failed. Please try again."). Misleading because `502` implies a Whisper outage, encouraging the client to retry — but the actual cause is user-actionable (bad input).
+
+**After (v1.2.0, deployed 2026-04-18):** empty or too-short audio now returns:
+
+```
+HTTP 400 Bad Request
+{ "error": { "code": "BAD_REQUEST", "message": "Audio file is empty or too short to transcribe." } }
+```
+
+One byte-level verbatim string covers both sub-cases (zero-byte local guard + Whisper 4xx). `502 UPSTREAM_ERROR` is now reserved for genuine Whisper-side 5xx / network / timeout.
+
+**Client-side implications:**
+
+1.  `AppError.fromCode("BAD_REQUEST", "Audio file is empty or too short…")` **currently discards the backend message** — the `BadRequest` variant is a `data object` with a fixed generic message ("The request was invalid."). The user sees the generic string, not the actionable "empty or too short" guidance. Fix to preserve backend-supplied messages verbatim lands in **Phase 7.2** (scoped below).
+2.  Do **not** auto-retry `/transcribe` 4xx responses. The app never did, but worth pinning explicitly — a future Phase 7.2 retry-on-error helper must skip 400/413/415.
+3.  The `/transcribe` response on Whisper-hallucinated `"you"` for short audio (non-error, `200 OK`) is indistinguishable from a valid transcription on the client side. Surface as-is; no special handling required.
+
+**Backend-side open questions (deferred, not in Phase 7.2 scope):**
+
+*   Whether the Android client should add a pre-upload duration guard (< 0.3s reject locally before upload) is a design call, not a contract issue. Trade-off: saves a round-trip but duplicates backend validation. Current position: skip — backend is authoritative, Golden Rule #2 favours capture-and-transmit simplicity.
+*   Whether to request a structured `error.details.reason` from the backend for analytics (distinguish zero-byte from too-short). Not needed for Phase 7.2 UX.
+
+**Impacted specs:** `TECHNICAL_SPEC.md §API Contracts #1` — rewritten with the new error table.
+
+---
+
 #### Fork 4 addendum — backend decisions locked in (2026-04-18)
 
 Backend team responded with their API_SPEC.md v1.1.0. Points that bind the Android client:

@@ -27,6 +27,22 @@ To maintain testability and separation of concerns, the following rules must be 
     ```json
     { "text": "transcribed text" }
     ```
+*   **Error responses — byte-level verbatim `message` strings** *(API_SPEC v1.2.0, 2026-04-18 — see MEMORY.md Fork 5)*:
+
+    | Trigger                                                        | HTTP | `error.code`         | `error.message`                                       |
+    | :------------------------------------------------------------- | :--- | :------------------- | :---------------------------------------------------- |
+    | Missing `audio` field                                          | 400  | `BAD_REQUEST`        | `Missing required field: audio.`                      |
+    | **Empty audio (0 bytes)**                                      | **400** | **`BAD_REQUEST`**    | **`Audio file is empty or too short to transcribe.`** |
+    | **Too-short / corrupted audio (Whisper 4xx path)**             | **400** | **`BAD_REQUEST`**    | **`Audio file is empty or too short to transcribe.`** |
+    | Audio > 25 MB                                                  | 413  | `FILE_TOO_LARGE`     | `Audio file exceeds the 25 MB size limit.`            |
+    | MIME ≠ `audio/mp4`                                             | 415  | `UNSUPPORTED_FORMAT` | `Unsupported audio format. Accepted format: m4a.`     |
+    | Whisper-side 5xx / network / timeout                           | 502  | `UPSTREAM_ERROR`     | `Transcription service failed. Please try again.`     |
+
+    All error responses follow the standard envelope (`§3 Global Error Schema`).
+
+    **Retry semantics:** `502 UPSTREAM_ERROR` is retry-appropriate (Whisper outage). `400 BAD_REQUEST` is **not** retry-appropriate — it indicates user-actionable input (prompt the user to re-record, don't auto-retry). The Android client must not auto-retry 4xx responses on `/transcribe`.
+
+    **Whisper edge case (non-error):** audio that is short but passes the backend's duration floor is forwarded to Whisper, which returns a legitimate `{"text":"..."}` response. In practice Whisper tends to hallucinate `"you"` for near-silent or ambiguous short clips. This is a `200 OK` (not an error) and the client has no way to distinguish it from a valid transcription. Surface as-is; treat as user-visible Whisper output.
 
 ### 2. POST `/chat` (LLM Streaming)
 *   **Content-Type:** `application/json`
