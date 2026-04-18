@@ -92,7 +92,14 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
     - **7.2.A** Backend-message preservation across the six fixed-message `AppError` variants (Option B, symmetric) — shipped. `BadRequest` / `FileTooLarge` / `Timeout` / `Network` / `ServiceUnavailable` / `Internal` converted from `data object` singletons to `data class Variant(rawMessage: String = DEFAULT)`; `AppError.fromCode(code, message)` threads backend messages through verbatim on every known code. `ChatEvent.toChatEvent()` `when` branches moved to `is` patterns; `ErrorMapper` singleton refs replaced with no-arg constructors. Six test files swept (`assertSame` → `assertEquals`), plus 12 new preserved-message tests.
     - **7.2.B** Manual E2E on device confirmed: zero-byte / too-short audio surfaces an auto-dismissing Snackbar with the verbatim backend message `"Audio file is empty or too short to transcribe."` — not a Tier-3 AlertDialog, no auto-retry. All four success criteria passed.
     - Final state: **262 unit tests green**, domain + presentation purity green, `assembleStagingDebug` green.
-- [ ] 7.3 **Accessibility:** Verify `TalkBack` support and `contentDescription` updates.
+- [ ] 7.3 **Accessibility, Polish & UX** — larger scope split into three sub-tasks per the `phase7_polish_deferred` memo + user-surfaced UX items. Absorbs:
+    - 7.1.3.E (Tier-3 AlertDialog UX redesign)
+    - 7.1.4 Option-B *(orphan-assistant UX rework, if we decide to do it)*
+    - deferred `collectAsStateWithLifecycle` swap
+    - deferred `MainActivity` smoke test
+    - **7.3.1 Accessibility** — stringResource migration for all hardcoded a11y `contentDescription`s; `LiveRegion.Polite` on streaming assistant bubbles; `Role.RadioButton` on persona chips (verify/ensure); TalkBack manual verification; touch-target and contrast spot-check.
+    - **7.3.2 Code Polish** — `collectAsStateWithLifecycle` migration in `ChatScreen.kt` (adds `androidx-lifecycle-runtime-compose` to version catalog); `MainActivity` smoke test with Hilt test infrastructure; misc. low-risk cleanups surfaced during the audit.
+    - **7.3.3 UI/UX Improvements** — Tier-3 AlertDialog Material 3 Expressive redesign; other user-proposed UX polish items (to be scoped at the start of 7.3.3). May absorb 7.1.4 Option-B if we pursue the deeper retry-flow redesign.
 - [ ] 7.4 **Cleanup:** Delete temporary `.m4a` files and `MediaRecorder` resource release.
 
 ### Phase 8: Final Audit
