@@ -9,10 +9,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.ruizurraca.luziatestdavid.R
 import com.ruizurraca.luziatestdavid.presentation.theme.LuziaTheme
 
 @Composable
@@ -32,15 +34,16 @@ fun ChatInputBar(
             label = streamingIndicatorLabel.orEmpty()
         )
         BottomAppBar {
+            val messageInputDescription = stringResource(R.string.cd_message_input)
             OutlinedTextField(
                 value = draft,
                 onValueChange = onDraftChange,
                 enabled = isEnabled,
-                placeholder = { Text("Type a message or tap the mic…") },
+                placeholder = { Text(stringResource(R.string.input_placeholder)) },
                 modifier = Modifier
                     .weight(1f)
                     .padding(end = 8.dp)
-                    .semantics { contentDescription = "Message input" }
+                    .semantics { contentDescription = messageInputDescription }
             )
             MorphingActionButton(
                 hasText = draft.isNotBlank(),

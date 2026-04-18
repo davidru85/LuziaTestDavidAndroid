@@ -9,6 +9,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.ruizurraca.luziatestdavid.R
 
 @Composable
 fun MorphingActionButton(
@@ -31,7 +33,7 @@ fun MorphingActionButton(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send message"
+                    contentDescription = stringResource(R.string.cd_send_message)
                 )
             }
         } else {
@@ -41,7 +43,9 @@ fun MorphingActionButton(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Mic,
-                    contentDescription = if (isRecording) "Stop recording" else "Record voice message"
+                    contentDescription = stringResource(
+                        if (isRecording) R.string.cd_stop_recording else R.string.cd_record_voice_message
+                    )
                 )
             }
         }

@@ -17,7 +17,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.ruizurraca.luziatestdavid.R
 import com.ruizurraca.luziatestdavid.presentation.theme.LuziaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,7 +47,7 @@ fun ChatTopAppBar(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.DeleteSweep,
-                    contentDescription = "Clear conversation"
+                    contentDescription = stringResource(R.string.cd_clear_conversation)
                 )
             }
         }
@@ -54,19 +56,19 @@ fun ChatTopAppBar(
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
-            title = { Text("Clear conversation?") },
-            text = { Text("This will remove all messages.") },
+            title = { Text(stringResource(R.string.dialog_clear_conversation_title)) },
+            text = { Text(stringResource(R.string.dialog_clear_conversation_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     showConfirmDialog = false
                     onConfirmClearConversation()
                 }) {
-                    Text("Clear")
+                    Text(stringResource(R.string.dialog_clear))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showConfirmDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.dialog_cancel))
                 }
             }
         )

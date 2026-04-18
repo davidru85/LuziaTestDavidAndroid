@@ -19,8 +19,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ruizurraca.luziatestdavid.R
 import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
@@ -102,19 +104,19 @@ fun ChatScreen(
     if (showRationale) {
         AlertDialog(
             onDismissRequest = { showRationale = false },
-            title = { Text("Microphone permission needed") },
-            text = { Text("Luzia needs microphone access to transcribe your voice into text.") },
+            title = { Text(stringResource(R.string.dialog_mic_permission_title)) },
+            text = { Text(stringResource(R.string.dialog_mic_permission_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     showRationale = false
                     permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                 }) {
-                    Text("Retry")
+                    Text(stringResource(R.string.dialog_retry))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRationale = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.dialog_cancel))
                 }
             }
         )
@@ -127,7 +129,7 @@ fun ChatScreen(
             text = { Text(event.message) },
             confirmButton = {
                 TextButton(onClick = { tier3Event = null }) {
-                    Text("OK")
+                    Text(stringResource(R.string.dialog_ok))
                 }
             }
         )

@@ -22,10 +22,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.ruizurraca.luziatestdavid.R
 import com.ruizurraca.luziatestdavid.presentation.model.AssistantStreamState
 import com.ruizurraca.luziatestdavid.presentation.model.ChatMessageUiModel
 import com.ruizurraca.luziatestdavid.presentation.theme.LuziaTheme
@@ -65,11 +67,12 @@ private fun AssistantBubbleContent(
 
 @Composable
 private fun LoadingLines() {
+    val loadingDescription = stringResource(R.string.cd_loading_response)
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 12.dp)
-            .semantics { contentDescription = "Loading response" }
+            .semantics { contentDescription = loadingDescription }
     ) {
         ShimmerBox(modifier = Modifier.fillMaxWidth().height(12.dp))
         ShimmerBox(modifier = Modifier.fillMaxWidth().height(12.dp))
@@ -95,7 +98,7 @@ private fun FailedIndicator(onRetry: (() -> Unit)?) {
     ) {
         Icon(
             imageVector = Icons.Filled.Warning,
-            contentDescription = "Reply failed",
+            contentDescription = stringResource(R.string.cd_reply_failed),
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier
                 .padding(horizontal = 8.dp, vertical = 6.dp)
@@ -105,7 +108,7 @@ private fun FailedIndicator(onRetry: (() -> Unit)?) {
             IconButton(onClick = onRetry) {
                 Icon(
                     imageVector = Icons.Filled.Refresh,
-                    contentDescription = "Retry reply",
+                    contentDescription = stringResource(R.string.cd_retry_reply),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
