@@ -36,6 +36,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -192,7 +193,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `stopRecording happy path transcribes and populates draft`() = runTest {
+    fun `stopRecording happy path transcribes populates draft and deletes temp audio file`() = runTest {
         coEvery { audioRecorder.start() } returns Resource.Success(Unit)
         val fakeFile = File.createTempFile("luzia", ".m4a")
         coEvery { audioRecorder.stop() } returns Resource.Success(fakeFile)
@@ -207,11 +208,12 @@ class ChatViewModelTest {
         assertTrue(state is ChatUiState.Idle) { "expected Idle after transcription, got $state" }
         assertEquals("hola qué tal", state.draft)
         coVerify(exactly = 1) { transcribeAudio(fakeFile) }
-        fakeFile.delete()
+        // Temp .m4a deleted after successful transcription (Phase 7.4.A)
+        assertFalse(fakeFile.exists()) { "expected temp audio file deleted, still at ${fakeFile.absolutePath}" }
     }
 
     @Test
-    fun `stopRecording transcription failure returns to Idle and emits error`() = runTest {
+    fun `stopRecording transcription failure returns to Idle, emits error, and still deletes temp audio`() = runTest {
         coEvery { audioRecorder.start() } returns Resource.Success(Unit)
         val fakeFile = File.createTempFile("luzia", ".m4a")
         coEvery { audioRecorder.stop() } returns Resource.Success(fakeFile)
@@ -233,9 +235,11 @@ class ChatViewModelTest {
             }
         }
 
+        // Temp .m4a is deleted regardless of transcription outcome (Phase 7.4.A)
+        assertFalse(fakeFile.exists()) { "expected temp audio file deleted, still at ${fakeFile.absolutePath}" }
+
         assertTrue(vm.state.value is ChatUiState.Idle)
         assertEquals("", vm.state.value.draft)
-        fakeFile.delete()
     }
 
     // ----- Text send flow ----------------------------------------------------
