@@ -264,4 +264,111 @@ class A11yStringMigrationEsTest {
     }
 
     // endregion
+
+    // region Tier-1 Snackbar copy (Phase 7.3.3.H)
+
+    @Test
+    fun `tier1_bad_request matches Spanish value`() {
+        assertEquals("La solicitud no es válida.", context.getString(R.string.tier1_bad_request))
+    }
+
+    @Test
+    fun `tier1_file_too_large matches Spanish value`() {
+        assertEquals(
+            "El archivo de audio es demasiado grande.",
+            context.getString(R.string.tier1_file_too_large)
+        )
+    }
+
+    @Test
+    fun `tier1_timeout matches Spanish value`() {
+        assertEquals("La solicitud ha caducado.", context.getString(R.string.tier1_timeout))
+    }
+
+    @Test
+    fun `tier1_network matches Spanish value`() {
+        assertEquals("Error de conexión de red.", context.getString(R.string.tier1_network))
+    }
+
+    @Test
+    fun `tier1_validation_error matches Spanish value`() {
+        assertEquals(
+            "Revisa los datos introducidos e inténtalo de nuevo.",
+            context.getString(R.string.tier1_validation_error)
+        )
+    }
+
+    @Test
+    fun `tier1_recorder_already_running matches Spanish value`() {
+        assertEquals(
+            "Ya hay una grabación en curso.",
+            context.getString(R.string.tier1_recorder_already_running)
+        )
+    }
+
+    @Test
+    fun `tier1_recorder_not_active matches Spanish value`() {
+        assertEquals(
+            "No hay ninguna grabación activa.",
+            context.getString(R.string.tier1_recorder_not_active)
+        )
+    }
+
+    @Test
+    fun `tier1_recorder_no_output matches Spanish value`() {
+        assertEquals(
+            "No hay archivo de salida para la grabación.",
+            context.getString(R.string.tier1_recorder_no_output)
+        )
+    }
+
+    @Test
+    fun `tier1_recorder_start_failed matches Spanish value`() {
+        assertEquals(
+            "No se ha podido iniciar la grabación. Inténtalo de nuevo.",
+            context.getString(R.string.tier1_recorder_start_failed)
+        )
+    }
+
+    @Test
+    fun `tier1_recorder_stop_failed matches Spanish value`() {
+        assertEquals(
+            "No se ha podido detener la grabación. Inténtalo de nuevo.",
+            context.getString(R.string.tier1_recorder_stop_failed)
+        )
+    }
+
+    @Test
+    fun `tier1_empty_audio_file matches Spanish value`() {
+        assertEquals(
+            "El archivo de audio está vacío. Graba de nuevo, por favor.",
+            context.getString(R.string.tier1_empty_audio_file)
+        )
+    }
+
+    @Test
+    fun `tier1_empty_conversation_history matches Spanish value`() {
+        assertEquals(
+            "Empieza una conversación primero.",
+            context.getString(R.string.tier1_empty_conversation_history)
+        )
+    }
+
+    @Test
+    fun `tier1_streaming_failed matches Spanish value`() {
+        assertEquals(
+            "Se ha interrumpido la transmisión de la respuesta. Inténtalo de nuevo.",
+            context.getString(R.string.tier1_streaming_failed)
+        )
+    }
+
+    @Test
+    fun `tier1_unexpected_failure matches Spanish value`() {
+        assertEquals(
+            "Algo ha fallado. Inténtalo de nuevo.",
+            context.getString(R.string.tier1_unexpected_failure)
+        )
+    }
+
+    // endregion
 }

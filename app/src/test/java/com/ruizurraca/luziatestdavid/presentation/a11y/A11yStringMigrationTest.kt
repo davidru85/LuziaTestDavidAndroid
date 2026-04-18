@@ -259,4 +259,105 @@ class A11yStringMigrationTest {
     }
 
     // endregion
+
+    // region Tier-1 Snackbar copy (Phase 7.3.3.H.2 — composable-resolved)
+
+    @Test
+    fun `tier1_bad_request matches expected English value`() {
+        assertEquals("The request was invalid.", context.getString(R.string.tier1_bad_request))
+    }
+
+    @Test
+    fun `tier1_file_too_large matches expected English value`() {
+        assertEquals("The audio file is too large.", context.getString(R.string.tier1_file_too_large))
+    }
+
+    @Test
+    fun `tier1_timeout matches expected English value`() {
+        assertEquals("The request timed out.", context.getString(R.string.tier1_timeout))
+    }
+
+    @Test
+    fun `tier1_network matches expected English value`() {
+        assertEquals("Network connection failed.", context.getString(R.string.tier1_network))
+    }
+
+    @Test
+    fun `tier1_validation_error matches expected English value`() {
+        assertEquals(
+            "Please check your input and try again.",
+            context.getString(R.string.tier1_validation_error)
+        )
+    }
+
+    @Test
+    fun `tier1_recorder_already_running matches expected English value`() {
+        assertEquals(
+            "Recording is already in progress.",
+            context.getString(R.string.tier1_recorder_already_running)
+        )
+    }
+
+    @Test
+    fun `tier1_recorder_not_active matches expected English value`() {
+        assertEquals("No active recording.", context.getString(R.string.tier1_recorder_not_active))
+    }
+
+    @Test
+    fun `tier1_recorder_no_output matches expected English value`() {
+        assertEquals(
+            "No output file for the recording.",
+            context.getString(R.string.tier1_recorder_no_output)
+        )
+    }
+
+    @Test
+    fun `tier1_recorder_start_failed matches expected English value`() {
+        assertEquals(
+            "Couldn't start the recording. Please try again.",
+            context.getString(R.string.tier1_recorder_start_failed)
+        )
+    }
+
+    @Test
+    fun `tier1_recorder_stop_failed matches expected English value`() {
+        assertEquals(
+            "Couldn't stop the recording. Please try again.",
+            context.getString(R.string.tier1_recorder_stop_failed)
+        )
+    }
+
+    @Test
+    fun `tier1_empty_audio_file matches expected English value`() {
+        assertEquals(
+            "The audio file is empty. Please record again.",
+            context.getString(R.string.tier1_empty_audio_file)
+        )
+    }
+
+    @Test
+    fun `tier1_empty_conversation_history matches expected English value`() {
+        assertEquals(
+            "Start a conversation first.",
+            context.getString(R.string.tier1_empty_conversation_history)
+        )
+    }
+
+    @Test
+    fun `tier1_streaming_failed matches expected English value`() {
+        assertEquals(
+            "The reply stream was interrupted. Please try again.",
+            context.getString(R.string.tier1_streaming_failed)
+        )
+    }
+
+    @Test
+    fun `tier1_unexpected_failure matches expected English value`() {
+        assertEquals(
+            "Something went wrong. Please try again.",
+            context.getString(R.string.tier1_unexpected_failure)
+        )
+    }
+
+    // endregion
 }
