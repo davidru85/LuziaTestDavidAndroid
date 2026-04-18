@@ -76,6 +76,16 @@ class MediaRecorderAudioRecorder @Inject constructor(
         return File(dir, "luzia_${System.currentTimeMillis()}.m4a")
     }
 
+    override fun release() {
+        val fileToDelete = currentFile
+        releaseQuietly()
+        // Also drop the in-flight temp .m4a; the owning UI is going away so no
+        // one is going to transcribe it (Phase 7.4.B).
+        if (fileToDelete != null) {
+            runCatching { fileToDelete.delete() }
+        }
+    }
+
     private fun releaseQuietly() {
         try {
             currentRecorder?.release()

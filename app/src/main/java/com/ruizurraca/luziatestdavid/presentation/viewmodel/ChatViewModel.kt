@@ -168,6 +168,17 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Widened to `public` so unit tests can simulate the framework invoking this
+     * lifecycle hook directly (framework's `ViewModel.clear()` is `internal`).
+     * Releases the recorder if any recording is in flight, so a backgrounded
+     * MediaRecorder doesn't keep holding the mic / writing to disk (Phase 7.4.B).
+     */
+    public override fun onCleared() {
+        audioRecorder.release()
+        super.onCleared()
+    }
+
     private fun activePersonaPrompt(): String =
         personaCatalog.entries().first { it.persona == _selectedPersona.value }.prompt
 
