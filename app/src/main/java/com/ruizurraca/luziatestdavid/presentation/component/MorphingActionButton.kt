@@ -18,8 +18,8 @@ fun MorphingActionButton(
     isRecording: Boolean,
     onMicTap: () -> Unit,
     onSendTap: () -> Unit,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     AnimatedContent(
         targetState = hasText,
