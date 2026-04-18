@@ -99,9 +99,17 @@ class ChatViewModel @Inject constructor(
             phase.value = Phase.Processing(ProcessingKind.TRANSCRIBING)
             when (val stopResult = audioRecorder.stop()) {
                 is Resource.Success -> {
-                    when (val transcribeResult = transcribeAudio(stopResult.data)) {
-                        is Resource.Success -> draft.value = transcribeResult.data
-                        is Resource.Error -> _events.tryEmit(transcribeResult.toTieredEvent())
+                    val audioFile = stopResult.data
+                    try {
+                        when (val transcribeResult = transcribeAudio(audioFile)) {
+                            is Resource.Success -> draft.value = transcribeResult.data
+                            is Resource.Error -> _events.tryEmit(transcribeResult.toTieredEvent())
+                        }
+                    } finally {
+                        // Clean up the temp .m4a regardless of transcription outcome
+                        // (Phase 7.4). The backend has it (on success) or doesn't need
+                        // it (on failure) — keeping the file around just leaks cache.
+                        audioFile.delete()
                     }
                 }
                 is Resource.Error -> _events.tryEmit(stopResult.toTieredEvent())
