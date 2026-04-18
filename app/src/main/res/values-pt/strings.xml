@@ -1,0 +1,56 @@
+<resources>
+    <!-- Neutral European Portuguese translations (Phase 7.3.3.F). See MEMORY.md
+         §Phase 7.3.3 for translation style notes + Fork 4 role_prompts risk note. -->
+
+    <string-array name="role_names">
+        <item>Estudante</item>
+        <item>Cientista</item>
+        <item>Artista</item>
+    </string-array>
+
+    <string-array name="role_prompts">
+        <item>És um tutor paciente e didático. Explica os conceitos passo a passo e incentiva a aprendizagem.</item>
+        <item>És um cientista rigoroso. Oferece respostas analíticas, precisas e fundamentadas em evidências.</item>
+        <item>És um artista criativo. Pensa com imaginação, propõe ideias e desperta a criatividade.</item>
+    </string-array>
+
+    <!-- Accessibility content descriptions -->
+    <string name="cd_record_voice_message">Gravar mensagem de voz</string>
+    <string name="cd_stop_recording">Parar a gravação</string>
+    <string name="cd_send_message">Enviar mensagem</string>
+    <string name="cd_clear_conversation">Limpar conversa</string>
+    <string name="cd_message_input">Entrada de mensagem</string>
+    <string name="cd_loading_response">A carregar resposta</string>
+    <string name="cd_reply_failed">Falha na resposta</string>
+    <string name="cd_retry_reply">Tentar novamente</string>
+    <string name="cd_sending_message">A enviar mensagem</string>
+    <string name="cd_message_sent">Mensagem enviada</string>
+    <string name="cd_failed_to_send">Falha no envio</string>
+
+    <!-- Dialog copy -->
+    <string name="dialog_mic_permission_title">É necessária permissão do microfone</string>
+    <string name="dialog_mic_permission_message">A Luzia precisa de aceder ao microfone para transcrever a tua voz em texto.</string>
+    <string name="dialog_retry">Tentar novamente</string>
+    <string name="dialog_cancel">Cancelar</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_clear_conversation_title">Limpar a conversa?</string>
+    <string name="dialog_clear_conversation_message">Serão removidas todas as mensagens.</string>
+    <string name="dialog_clear">Limpar</string>
+
+    <!-- Input bar placeholder -->
+    <string name="input_placeholder">Escreve uma mensagem ou toca no microfone…</string>
+
+    <!-- Failed assistant bubble copy -->
+    <string name="bubble_failed_latest_message">Fiquei em branco. Queres tentar novamente?</string>
+    <string name="bubble_failed_older_message">Desculpa, mensagem vazia</string>
+
+    <!-- Tier-3 AlertDialog copy -->
+    <string name="dialog_tier3_service_unavailable_title">Serviço indisponível</string>
+    <string name="dialog_tier3_service_unavailable_body">Neste momento não conseguimos ligar à Luzia. Tenta novamente daqui a pouco.</string>
+    <string name="dialog_tier3_internal_title">Algo correu mal</string>
+    <string name="dialog_tier3_internal_body">A Luzia teve um erro inesperado. Podes tentar enviar a mensagem novamente.</string>
+    <string name="dialog_tier3_unexpected_title">Erro inesperado</string>
+    <string name="dialog_tier3_unexpected_body">Aconteceu algo que não esperávamos. Tenta novamente — se continuar a acontecer, avisa-nos.</string>
+    <string name="dialog_tier3_show_details">Mostrar detalhes</string>
+    <string name="dialog_tier3_hide_details">Ocultar detalhes</string>
+</resources>
