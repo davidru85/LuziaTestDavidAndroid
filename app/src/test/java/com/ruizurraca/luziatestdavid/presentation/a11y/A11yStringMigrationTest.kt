@@ -140,4 +140,16 @@ class A11yStringMigrationTest {
     }
 
     // endregion
+
+    // region Input-bar placeholder
+
+    @Test
+    fun `input_placeholder matches expected English value`() {
+        assertEquals(
+            "Type a message or tap the mic…",
+            context.getString(R.string.input_placeholder)
+        )
+    }
+
+    // endregion
 }
