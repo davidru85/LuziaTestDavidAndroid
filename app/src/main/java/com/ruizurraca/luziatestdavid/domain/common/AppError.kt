@@ -37,6 +37,67 @@ sealed class AppError(
         val rawMessage: String
     ) : AppError(code = rawCode, message = rawMessage)
 
+    // Local / client-originated error paths (Phase 7.3.3.H.1).
+    // The `message` defaults below are dev-facing fallbacks kept for logs and
+    // for backward compat with `Resource.Error.message`; the user-facing copy
+    // is resolved via `stringResource` at the presentation layer in 7.3.3.H.2.
+
+    data object RecorderAlreadyRunning : AppError(
+        code = "LOCAL_RECORDER_ALREADY_RUNNING",
+        message = "Recording already in progress."
+    )
+
+    data object RecorderNotActive : AppError(
+        code = "LOCAL_RECORDER_NOT_ACTIVE",
+        message = "No active recording."
+    )
+
+    data object RecorderNoOutputFile : AppError(
+        code = "LOCAL_RECORDER_NO_OUTPUT_FILE",
+        message = "No output file for recording."
+    )
+
+    data object RecorderStartFailed : AppError(
+        code = "LOCAL_RECORDER_START_FAILED",
+        message = "Failed to start recording."
+    )
+
+    data object RecorderStopFailed : AppError(
+        code = "LOCAL_RECORDER_STOP_FAILED",
+        message = "Failed to stop recording."
+    )
+
+    data object EmptyAudioFile : AppError(
+        code = "LOCAL_EMPTY_AUDIO_FILE",
+        message = "Audio file is missing or empty."
+    )
+
+    data object EmptyConversationHistory : AppError(
+        code = "LOCAL_EMPTY_CONVERSATION_HISTORY",
+        message = "Conversation history is empty."
+    )
+
+    data object StreamingFailed : AppError(
+        code = "LOCAL_STREAMING_FAILED",
+        message = "Streaming failed."
+    )
+
+    data object UnexpectedFailure : AppError(
+        code = "LOCAL_UNEXPECTED_FAILURE",
+        message = "Unexpected failure."
+    )
+
+    /**
+     * Wraps this [AppError] into a [Resource.Error]. The `message` field is populated
+     * with the AppError's default (dev-facing); user-facing copy resolves to a
+     * `stringResource` at the presentation layer via [Tier1Kind] / [Tier3Kind].
+     */
+    fun toResourceError(throwable: Throwable? = null): Resource.Error = Resource.Error(
+        message = message,
+        throwable = throwable,
+        error = this
+    )
+
     companion object {
         private const val VALIDATION_ERROR_CODE = "VALIDATION_ERROR"
 

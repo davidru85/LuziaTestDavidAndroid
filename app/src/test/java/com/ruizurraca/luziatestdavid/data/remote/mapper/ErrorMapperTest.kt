@@ -147,27 +147,26 @@ class ErrorMapperTest {
 
     // endregion
 
-    // region Unknown fallback
+    // region Unclassified fallback (Phase 7.3.3.H.1 — maps to UnexpectedFailure local
+    // variant so the presentation layer can resolve a translated string; Unknown is
+    // reserved for unknown backend response-body codes)
 
     @Test
-    fun `unclassified Throwable falls back to Unknown preserving class name and message`() = runTest {
+    fun `unclassified Throwable falls back to UnexpectedFailure local AppError`() = runTest {
         val exception = RuntimeException("weird state")
 
         val result = mapper.fromThrowable(exception)
 
-        assertTrue(result is AppError.Unknown)
-        assertEquals("RuntimeException", result.code)
-        assertEquals("weird state", result.message)
+        assertEquals(AppError.UnexpectedFailure, result)
     }
 
     @Test
-    fun `unclassified Throwable with null message still maps to Unknown with non-blank message`() = runTest {
+    fun `unclassified Throwable with null message still falls back to UnexpectedFailure`() = runTest {
         val exception = RuntimeException()
 
         val result = mapper.fromThrowable(exception)
 
-        assertTrue(result is AppError.Unknown)
-        assertTrue(result.message.isNotBlank())
+        assertEquals(AppError.UnexpectedFailure, result)
     }
 
     // endregion

@@ -1,5 +1,6 @@
 package com.ruizurraca.luziatestdavid.domain.usecase
 
+import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.repository.ChatRepository
@@ -14,12 +15,12 @@ class SendMessageUseCase @Inject constructor(
 ) {
     operator fun invoke(history: List<ChatMessage>): Flow<Resource<String>> {
         if (history.isEmpty()) {
-            return flowOf(Resource.Error("Conversation history is empty."))
+            return flowOf(AppError.EmptyConversationHistory.toResourceError())
         }
         return flow {
             repository.streamChat(history).collect { emit(it) }
         }.catch { cause ->
-            emit(Resource.Error(cause.message ?: "Streaming failed.", cause))
+            emit(AppError.StreamingFailed.toResourceError(cause))
         }
     }
 }

@@ -28,7 +28,19 @@ fun AppError.toChatEvent(): ChatEvent = when (this) {
     is AppError.FileTooLarge,
     is AppError.Timeout,
     is AppError.Network,
-    is AppError.ValidationError -> ChatEvent.Tier1(message)
+    is AppError.ValidationError,
+    // Local (client-originated) variants — user-facing copy is resolved via
+    // stringResource at the composable layer in 7.3.3.H.2. Until then, the
+    // `message` carries the AppError default as a dev-facing fallback.
+    AppError.RecorderAlreadyRunning,
+    AppError.RecorderNotActive,
+    AppError.RecorderNoOutputFile,
+    AppError.RecorderStartFailed,
+    AppError.RecorderStopFailed,
+    AppError.EmptyAudioFile,
+    AppError.EmptyConversationHistory,
+    AppError.StreamingFailed,
+    AppError.UnexpectedFailure -> ChatEvent.Tier1(message)
 
     is AppError.ServiceUnavailable -> ChatEvent.Tier3(
         kind = Tier3Kind.ServiceUnavailable,

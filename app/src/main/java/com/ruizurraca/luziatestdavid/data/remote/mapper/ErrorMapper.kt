@@ -27,10 +27,7 @@ class ErrorMapper @Inject constructor(
 
         is IOException -> AppError.Network()
 
-        else -> AppError.Unknown(
-            rawCode = throwable::class.simpleName ?: "UNKNOWN",
-            rawMessage = throwable.message.orFallback("Unexpected failure.")
-        )
+        else -> AppError.UnexpectedFailure
     }
 
     private suspend fun ResponseException.classify(): AppError =
