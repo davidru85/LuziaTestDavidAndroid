@@ -279,4 +279,85 @@ class ChatMapperTest {
     }
 
     // endregion
+
+    // region Empty-content assistant filter (Phase 7.1.4, Fork 4 addendum §2)
+
+    @Test
+    fun `toRequestDto filters out assistant messages whose content is an empty string`() {
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "ol", 1L, personaPrompt = tutor),
+            ChatMessage("a-empty", MessageRole.ASSISTANT, "", 2L),
+            ChatMessage("u2", MessageRole.USER, "Esto es una prueba", 3L, personaPrompt = tutor)
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals(2, dto.messages.size)
+        assertEquals(listOf("user", "user"), dto.messages.map { it.role })
+        assertEquals(listOf("ol", "Esto es una prueba"), dto.messages.map { it.content })
+    }
+
+    @Test
+    fun `toRequestDto filters out assistant messages whose content is blank whitespace`() {
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "hi", 1L, personaPrompt = tutor),
+            ChatMessage("a-blank", MessageRole.ASSISTANT, "   \n\t ", 2L)
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals(1, dto.messages.size)
+        assertEquals("user", dto.messages.single().role)
+    }
+
+    @Test
+    fun `toRequestDto keeps assistant messages with non-empty content`() {
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "hi", 1L, personaPrompt = tutor),
+            ChatMessage("a1", MessageRole.ASSISTANT, "hello", 2L),
+            ChatMessage("u2", MessageRole.USER, "again", 3L, personaPrompt = tutor)
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals(3, dto.messages.size)
+        assertEquals("hello", dto.messages[1].content)
+    }
+
+    @Test
+    fun `toRequestDto preserves order across user and surviving assistant messages after filtering`() {
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "first", 1L, personaPrompt = tutor),
+            ChatMessage("a-empty-1", MessageRole.ASSISTANT, "", 2L),
+            ChatMessage("u2", MessageRole.USER, "second", 3L, personaPrompt = artist),
+            ChatMessage("a1", MessageRole.ASSISTANT, "reply", 4L),
+            ChatMessage("u3", MessageRole.USER, "third", 5L, personaPrompt = tutor),
+            ChatMessage("a-empty-2", MessageRole.ASSISTANT, "", 6L)
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals(
+            listOf("first", "second", "reply", "third"),
+            dto.messages.map { it.content }
+        )
+    }
+
+    @Test
+    fun `toRequestDto does not filter user messages even if content would be empty`() {
+        // The VM guards empty drafts (onSendTap), and the backend 422s empty user content.
+        // The mapper deliberately does NOT silently drop user messages so any DB-level
+        // pathology surfaces as a backend error rather than disappearing silently.
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "", 1L, personaPrompt = tutor)
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals(1, dto.messages.size)
+        assertEquals("user", dto.messages.single().role)
+        assertEquals("", dto.messages.single().content)
+    }
+
+    // endregion
 }
