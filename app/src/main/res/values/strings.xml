@@ -44,4 +44,14 @@
     <!-- Failed assistant bubble copy (Phase 7.3.3.B) -->
     <string name="bubble_failed_latest_message">I\'ve gone blank. Mind retrying?</string>
     <string name="bubble_failed_older_message">Sorry, empty message</string>
+
+    <!-- Tier-3 AlertDialog copy (Phase 7.3.3.C) -->
+    <string name="dialog_tier3_service_unavailable_title">Service unavailable</string>
+    <string name="dialog_tier3_service_unavailable_body">We can\'t reach Luzia right now. Please try again in a moment.</string>
+    <string name="dialog_tier3_internal_title">Something went wrong</string>
+    <string name="dialog_tier3_internal_body">Luzia hit an unexpected error. You can try sending your message again.</string>
+    <string name="dialog_tier3_unexpected_title">Unexpected error</string>
+    <string name="dialog_tier3_unexpected_body">Something we didn\'t anticipate happened. Please try again — if it keeps happening, let us know.</string>
+    <string name="dialog_tier3_show_details">Show details</string>
+    <string name="dialog_tier3_hide_details">Hide details</string>
 </resources>

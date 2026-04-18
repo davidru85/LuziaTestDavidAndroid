@@ -5,7 +5,12 @@ import android.app.Activity
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -18,14 +23,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ruizurraca.luziatestdavid.R
 import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
+import com.ruizurraca.luziatestdavid.presentation.component.LuziaAlertDialog
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
+import com.ruizurraca.luziatestdavid.presentation.state.Tier3Kind
 import com.ruizurraca.luziatestdavid.presentation.viewmodel.ChatViewModel
 
 @Composable
@@ -123,10 +131,13 @@ fun ChatScreen(
     }
 
     tier3Event?.let { event ->
-        AlertDialog(
+        LuziaAlertDialog(
             onDismissRequest = { tier3Event = null },
-            title = { Text(event.title) },
-            text = { Text(event.message) },
+            title = stringResource(event.kind.titleRes()),
+            body = stringResource(event.kind.bodyRes()),
+            icon = event.kind.icon(),
+            iconTint = MaterialTheme.colorScheme.error,
+            detailsMessage = event.detailsMessage,
             confirmButton = {
                 TextButton(onClick = { tier3Event = null }) {
                     Text(stringResource(R.string.dialog_ok))
@@ -134,4 +145,22 @@ fun ChatScreen(
             }
         )
     }
+}
+
+private fun Tier3Kind.titleRes(): Int = when (this) {
+    Tier3Kind.ServiceUnavailable -> R.string.dialog_tier3_service_unavailable_title
+    Tier3Kind.InternalError -> R.string.dialog_tier3_internal_title
+    Tier3Kind.Unexpected -> R.string.dialog_tier3_unexpected_title
+}
+
+private fun Tier3Kind.bodyRes(): Int = when (this) {
+    Tier3Kind.ServiceUnavailable -> R.string.dialog_tier3_service_unavailable_body
+    Tier3Kind.InternalError -> R.string.dialog_tier3_internal_body
+    Tier3Kind.Unexpected -> R.string.dialog_tier3_unexpected_body
+}
+
+private fun Tier3Kind.icon(): ImageVector = when (this) {
+    Tier3Kind.ServiceUnavailable -> Icons.Filled.CloudOff
+    Tier3Kind.InternalError -> Icons.Filled.ErrorOutline
+    Tier3Kind.Unexpected -> Icons.Filled.HelpOutline
 }
