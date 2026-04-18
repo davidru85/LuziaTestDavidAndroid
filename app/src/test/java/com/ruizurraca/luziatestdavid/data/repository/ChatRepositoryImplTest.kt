@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -48,7 +49,13 @@ class ChatRepositoryImplTest {
     private val apiClient: L1ApiClient = mockk()
     private val sseParser = SseParser()
     private val chatMapper = ChatMapper()
-    private val errorMapper = ErrorMapper()
+    private val errorMapper = ErrorMapper(
+        json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            explicitNulls = false
+        }
+    )
     private val dao: ChatMessageDao = mockk()
     private val dispatcher = UnconfinedTestDispatcher()
 
