@@ -245,4 +245,23 @@ class A11yStringMigrationEsTest {
     }
 
     // endregion
+
+    // region Streaming indicator labels (Phase 7.3.3.G)
+
+    @Test
+    fun `label_recording matches Spanish value`() {
+        assertEquals("Grabando…", context.getString(R.string.label_recording))
+    }
+
+    @Test
+    fun `label_transcribing matches Spanish value`() {
+        assertEquals("Transcribiendo…", context.getString(R.string.label_transcribing))
+    }
+
+    @Test
+    fun `label_thinking matches Spanish value`() {
+        assertEquals("Pensando…", context.getString(R.string.label_thinking))
+    }
+
+    // endregion
 }

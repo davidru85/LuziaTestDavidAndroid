@@ -234,4 +234,29 @@ class A11yStringMigrationTest {
     }
 
     // endregion
+
+    // region Streaming indicator labels + brand (Phase 7.3.3.G)
+
+    @Test
+    fun `label_recording matches expected English value`() {
+        assertEquals("Recording…", context.getString(R.string.label_recording))
+    }
+
+    @Test
+    fun `label_transcribing matches expected English value`() {
+        assertEquals("Transcribing…", context.getString(R.string.label_transcribing))
+    }
+
+    @Test
+    fun `label_thinking matches expected English value`() {
+        assertEquals("Thinking…", context.getString(R.string.label_thinking))
+    }
+
+    @Test
+    fun `app_title is the Luzia brand and does not vary by locale`() {
+        // translatable="false" in strings.xml — no per-locale overrides.
+        assertEquals("Luzia", context.getString(R.string.app_title))
+    }
+
+    // endregion
 }
