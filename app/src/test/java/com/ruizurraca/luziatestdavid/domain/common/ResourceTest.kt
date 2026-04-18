@@ -36,6 +36,30 @@ class ResourceTest {
     }
 
     @Test
+    fun `Error error field defaults to null for backward compatibility`() {
+        val resource: Resource<Int> = Resource.Error("legacy error")
+
+        assertTrue(resource is Resource.Error)
+        assertNull((resource as Resource.Error).error)
+    }
+
+    @Test
+    fun `Error carries optional AppError alongside message and throwable`() {
+        val cause = IllegalStateException("socket closed")
+        val resource: Resource<String> = Resource.Error(
+            message = "Network connection failed.",
+            throwable = cause,
+            error = AppError.Network
+        )
+
+        assertTrue(resource is Resource.Error)
+        val err = resource as Resource.Error
+        assertEquals("Network connection failed.", err.message)
+        assertSame(cause, err.throwable)
+        assertSame(AppError.Network, err.error)
+    }
+
+    @Test
     fun `Resource is exhaustive when matched`() {
         val result: Resource<Int> = Resource.Success(42)
 
