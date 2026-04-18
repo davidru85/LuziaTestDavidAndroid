@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Luzia Test David</string>
+    <string name="app_name" translatable="false">Luzia Test David</string>
     <string name="app_title" translatable="false">Luzia</string>
 
     <!-- Streaming indicator labels (Phase 7.3.3.G) -->

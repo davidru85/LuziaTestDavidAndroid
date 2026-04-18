@@ -48,7 +48,14 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var tier3Event by remember { mutableStateOf<ChatEvent.Tier3?>(null) }
 
-    val context = LocalContext.current
+    // Pre-resolve every Tier1Kind → translated copy at composable time so the
+    // LaunchedEffect lambda can do a pure map lookup. Avoids the
+    // `LocalContextGetResourceValueCall` lint: Context captured inside a
+    // LaunchedEffect wouldn't invalidate on locale change, whereas the map
+    // rebuilds as a normal Compose recomposition would.
+    val tier1CopyByKind: Map<Tier1Kind, String> = Tier1Kind.entries.associateWith { kind ->
+        stringResource(kind.messageRes())
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -56,9 +63,8 @@ fun ChatScreen(
                 is ChatEvent.Tier1 -> {
                     // Prefer backend-supplied message when present (option iii —
                     // backend copy often carries actionable specificity).
-                    // Otherwise resolve the semantic kind to translated copy.
-                    val text = event.backendMessage
-                        ?: context.getString(event.kind.messageRes())
+                    // Otherwise surface the translated copy for the semantic kind.
+                    val text = event.backendMessage ?: tier1CopyByKind.getValue(event.kind)
                     snackbarHostState.showSnackbar(text)
                 }
                 is ChatEvent.Tier3 -> tier3Event = event
@@ -66,6 +72,7 @@ fun ChatScreen(
         }
     }
 
+    val context = LocalContext.current
     var showRationale by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
