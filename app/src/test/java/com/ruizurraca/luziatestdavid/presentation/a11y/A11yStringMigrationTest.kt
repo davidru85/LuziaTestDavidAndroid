@@ -115,4 +115,29 @@ class A11yStringMigrationTest {
     }
 
     // endregion
+
+    // region Clear-conversation confirmation dialog (ChatTopAppBar)
+
+    @Test
+    fun `dialog_clear_conversation_title matches expected English value`() {
+        assertEquals(
+            "Clear conversation?",
+            context.getString(R.string.dialog_clear_conversation_title)
+        )
+    }
+
+    @Test
+    fun `dialog_clear_conversation_message matches expected English value`() {
+        assertEquals(
+            "This will remove all messages.",
+            context.getString(R.string.dialog_clear_conversation_message)
+        )
+    }
+
+    @Test
+    fun `dialog_clear matches expected English value`() {
+        assertEquals("Clear", context.getString(R.string.dialog_clear))
+    }
+
+    // endregion
 }
