@@ -70,7 +70,7 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
 
 - [ ] **7.0 Error Classification (deferred from Phase 5.5 — Fork 3):** Implement the 3-Tier error strategy end-to-end per `TECHNICAL_SPEC.md §Error Handling`.
     - [x] **7.0.A** Domain: `AppError` sealed class (`BadRequest` / `FileTooLarge` / `Timeout` / `Network` / `ServiceUnavailable` / `Internal` / `Unknown`) + `AppError.fromCode(...)` factory; extend `Resource.Error` with optional `error: AppError?`. Domain purity preserved.
-    - [ ] **7.0.B** Data: map Ktor/IO failures + SSE `event: error` → `AppError.*` in `ChatRepositoryImpl`; MockEngine-driven tests per code path.
+    - [x] **7.0.B** Data: `ErrorMapper` (`class @Inject` under `data/remote/mapper/`) classifies Ktor/IO throwables (`HttpRequestTimeoutException`/`SocketTimeoutException` → `Timeout`; `UnknownHostException`/`ConnectException`/`IOException` → `Network`; `ClientRequestException` 400/413 → `BadRequest`/`FileTooLarge`; `ServerResponseException` 503/5xx → `ServiceUnavailable`/`Internal`; fallback → `Unknown`). SSE `event: error` flows via `AppError.fromCode(code, message)`. `ChatRepositoryImpl` now injects `ErrorMapper` and populates `Resource.Error.error`. MockEngine produces real Ktor exception instances in tests.
     - [ ] **7.0.C** Presentation: extend `ChatEvent` with `Tier1` / `Tier3` subtypes (Tier-2 stays on `MessageStatus.FAILED` inline bubble); add `AppError.toChatEvent()` mapper; `ChatScreen` renders Tier-3 via `AlertDialog`.
 - [ ] 7.1 **End-to-End:** Manual test: Record $\rightarrow$ Transcribe $\rightarrow$ Stream $\rightarrow$ Display.
 - [ ] 7.2 **Edge Cases:** Test empty audio, network loss, and extremely long AI responses.
