@@ -176,10 +176,14 @@ class RoleSelectorChipsTest {
 
         // Icons are persistent (always visible, not just on the selected chip) so each
         // persona has a stable visual identity. testTag is the stable handle —
-        // ImageVector equality via semantics isn't directly exposed.
-        composeTestRule.onNodeWithTag("persona-icon-STUDENT").assertIsDisplayed()
-        composeTestRule.onNodeWithTag("persona-icon-SCIENTIST").assertIsDisplayed()
-        composeTestRule.onNodeWithTag("persona-icon-ARTIST").assertIsDisplayed()
+        // ImageVector equality via semantics isn't directly exposed. useUnmergedTree
+        // because FilterChip merges the leadingIcon's semantics into the chip node.
+        composeTestRule.onNodeWithTag("persona-icon-STUDENT", useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("persona-icon-SCIENTIST", useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("persona-icon-ARTIST", useUnmergedTree = true)
+            .assertIsDisplayed()
     }
 
     @Test
@@ -195,8 +199,10 @@ class RoleSelectorChipsTest {
         }
 
         // Non-selected personas still display their icon.
-        composeTestRule.onNodeWithTag("persona-icon-STUDENT").assertIsDisplayed()
-        composeTestRule.onNodeWithTag("persona-icon-SCIENTIST").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("persona-icon-STUDENT", useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("persona-icon-SCIENTIST", useUnmergedTree = true)
+            .assertIsDisplayed()
     }
 
     // endregion
