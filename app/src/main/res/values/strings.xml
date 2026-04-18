@@ -40,4 +40,8 @@
 
     <!-- Input bar placeholder (Phase 7.3.1.A) -->
     <string name="input_placeholder">Type a message or tap the mic…</string>
+
+    <!-- Failed assistant bubble copy (Phase 7.3.3.B) -->
+    <string name="bubble_failed_latest_message">I\'ve gone blank. Mind retrying?</string>
+    <string name="bubble_failed_older_message">Sorry, empty message</string>
 </resources>

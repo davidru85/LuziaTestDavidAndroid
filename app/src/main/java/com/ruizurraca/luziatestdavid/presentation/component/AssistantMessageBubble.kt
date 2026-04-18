@@ -112,6 +112,14 @@ private fun AssistantText(content: String, announceChanges: Boolean) {
 
 @Composable
 private fun FailedIndicator(onRetry: (() -> Unit)?) {
+    val messageRes = if (onRetry != null) {
+        // Latest failure — retryable, invite the user to tap the refresh button.
+        R.string.bubble_failed_latest_message
+    } else {
+        // Older failure — no longer retryable (only the last failure routes to
+        // onRetryLastFailure), so show the apologetic variant without a retry affordance.
+        R.string.bubble_failed_older_message
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
@@ -123,6 +131,12 @@ private fun FailedIndicator(onRetry: (() -> Unit)?) {
             modifier = Modifier
                 .padding(horizontal = 8.dp, vertical = 6.dp)
                 .size(20.dp)
+        )
+        Text(
+            text = stringResource(messageRes),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(end = 8.dp)
         )
         if (onRetry != null) {
             IconButton(onClick = onRetry) {
