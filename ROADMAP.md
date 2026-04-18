@@ -105,17 +105,26 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
         - Final state: **286 unit tests**, domain + presentation purity, `assembleStagingDebug` — all green.
     - **7.3.2 Code Polish** —
         - [x] **7.3.2.A** `collectAsStateWithLifecycle` migration in `ChatScreen.kt` — shipped. New `androidx-lifecycle-runtime-compose` entry added to `libs.versions.toml` (reusing the existing `lifecycleRuntimeKtx = "2.10.0"` version). Both `viewModel.state` and `viewModel.selectedPersona` now collect via the lifecycle-aware API so emissions pause while the app is backgrounded. No RED test — this is a pure API-swap refactor; the library already tests the lifecycle-pause behaviour itself, and existing `ChatScreen*Test` / `ChatViewModelTest` suites continue to guard emission shape.
-        - [ ] **7.3.2.B** `MainActivity` smoke test with Hilt test infrastructure — introduces `hilt-android-testing` + `HiltTestApplication` runner + a Robolectric test that launches the activity and asserts `ChatScreen` renders.
         - [ ] **7.3.2.C** Misc. low-risk cleanups surfaced during the audit *(opens during execution)*.
+        - *(7.3.2.B promoted to its own Phase 8 — see below — after the 2026-04-18 spike showed the scope is larger than a polish sub-task.)*
     - **7.3.3 UI/UX Improvements** — Tier-3 AlertDialog Material 3 Expressive redesign; other user-proposed UX polish items (to be scoped at the start of 7.3.3). May absorb 7.1.4 Option-B if we pursue the deeper retry-flow redesign.
 - [ ] 7.4 **Cleanup:** Delete temporary `.m4a` files and `MediaRecorder` resource release.
 
-### Phase 8: Final Audit
-- [ ] 8.1 **Unit Tests:** Verify 100% coverage of `UseCases` and `Mappers`.
-- [ ] 8.2 **Lint & Build:** `./gradlew lintStagingDebug` $\rightarrow$ **Result: ZERO ERRORS**.
+### Phase 8: Hilt Test Infrastructure & `MainActivity` Smoke Test
+*Goal: establish the project's first activity-level, DI-wired test graph, and use it to smoke-test `MainActivity` end-to-end under Robolectric.*
+*Promoted from Phase 7.3.2.B after the 2026-04-18 spike — the scope justifies standalone-phase treatment rather than sitting inside a polish sub-task. Full spike rationale in the `phase7_polish_deferred` memo.*
 
-### Phase 9: Documentation
-- [ ] 9.1 **README:** Complete the professional `README.md` (Design Decisions, Tech Stack, Setup).
+- [ ] **8.1 Catalog & dependencies:** add `hilt-android-testing` to `libs.versions.toml`; add `testImplementation(libs.hilt.android.testing)` and `kspTest(libs.hilt.compiler)` to the app module.
+- [ ] **8.2 Test app module:** create a `TestAppModule` under `app/src/test/` providing test doubles for the three production modules that can't boot under Robolectric: MockEngine-backed `HttpClient` (substitutes `NetworkModule`), in-memory `LuziaDatabase` (substitutes `DatabaseModule`), fake `AudioRecorder` (substitutes `AudioModule`). Keep `CatalogModule`, `RepositoryModule`, `DispatcherModule` intact — they have no native/system-service dependencies.
+- [ ] **8.3 `MainActivity` smoke test:** `@HiltAndroidTest` + `@Config(application = HiltTestApplication::class)` + `@UninstallModules(NetworkModule::class, DatabaseModule::class, AudioModule::class)` + `HiltAndroidRule`; launch via `ActivityScenario.launch(MainActivity::class.java)`; assert `ChatScreen` renders by locating the mic button via `onNodeWithContentDescription(context.getString(R.string.cd_record_voice_message)).assertIsDisplayed()`.
+- [ ] **8.4 Verification:** full unit suite + purity + `assembleStagingDebug` stay green after the new test graph lands.
+
+### Phase 9: Final Audit
+- [ ] 9.1 **Unit Tests:** Verify 100% coverage of `UseCases` and `Mappers`.
+- [ ] 9.2 **Lint & Build:** `./gradlew lintStagingDebug` $\rightarrow$ **Result: ZERO ERRORS**.
+
+### Phase 10: Documentation
+- [ ] 10.1 **README:** Complete the professional `README.md` (Design Decisions, Tech Stack, Setup).
   - Include a **"Future Improvements / Next Steps"** section covering:
     - **Room 2.x → Room 3.x migration:** Switch `androidx.room` → `androidx.room3` once 3.x reaches stable. Room 3 offers coroutine-first APIs (`withWriteTransaction`), the new `SQLiteDriver` surface, Kotlin Multiplatform support, and `@DaoReturnTypeConverters`. Deferred from Phase 4.3 because 3.x is alpha as of 2026-04-17; stability outweighs the upside for this build.
-    - (Additional items to capture as they arise during Phases 5–8.)
+    - (Additional items to capture as they arise during Phases 5–9.)
