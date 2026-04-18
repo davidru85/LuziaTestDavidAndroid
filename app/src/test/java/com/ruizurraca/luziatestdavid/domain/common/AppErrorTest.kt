@@ -1,6 +1,8 @@
 package com.ruizurraca.luziatestdavid.domain.common
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -123,6 +125,15 @@ class AppErrorTest {
             is AppError.Internal -> "tier3"
             is AppError.ValidationError -> "tier1"
             is AppError.Unknown -> "tier3"
+            AppError.RecorderAlreadyRunning,
+            AppError.RecorderNotActive,
+            AppError.RecorderNoOutputFile,
+            AppError.RecorderStartFailed,
+            AppError.RecorderStopFailed,
+            AppError.EmptyAudioFile,
+            AppError.EmptyConversationHistory,
+            AppError.StreamingFailed,
+            AppError.UnexpectedFailure -> "tier1"
         }
 
         assertEquals("tier2", label)
@@ -247,6 +258,96 @@ class AppErrorTest {
 
         assertTrue(error is AppError.Internal)
         assertEquals("An internal server error occurred.", error.message)
+    }
+
+    // endregion
+
+    // region Local variants (Phase 7.3.3.H.1 — client-originated error paths)
+
+    @Test
+    fun `RecorderAlreadyRunning carries its local code and non-blank message`() {
+        val error: AppError = AppError.RecorderAlreadyRunning
+        assertEquals("LOCAL_RECORDER_ALREADY_RUNNING", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `RecorderNotActive carries its local code and non-blank message`() {
+        val error: AppError = AppError.RecorderNotActive
+        assertEquals("LOCAL_RECORDER_NOT_ACTIVE", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `RecorderNoOutputFile carries its local code and non-blank message`() {
+        val error: AppError = AppError.RecorderNoOutputFile
+        assertEquals("LOCAL_RECORDER_NO_OUTPUT_FILE", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `RecorderStartFailed carries its local code and non-blank message`() {
+        val error: AppError = AppError.RecorderStartFailed
+        assertEquals("LOCAL_RECORDER_START_FAILED", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `RecorderStopFailed carries its local code and non-blank message`() {
+        val error: AppError = AppError.RecorderStopFailed
+        assertEquals("LOCAL_RECORDER_STOP_FAILED", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `EmptyAudioFile carries its local code and non-blank message`() {
+        val error: AppError = AppError.EmptyAudioFile
+        assertEquals("LOCAL_EMPTY_AUDIO_FILE", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `EmptyConversationHistory carries its local code and non-blank message`() {
+        val error: AppError = AppError.EmptyConversationHistory
+        assertEquals("LOCAL_EMPTY_CONVERSATION_HISTORY", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `StreamingFailed carries its local code and non-blank message`() {
+        val error: AppError = AppError.StreamingFailed
+        assertEquals("LOCAL_STREAMING_FAILED", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `UnexpectedFailure carries its local code and non-blank message`() {
+        val error: AppError = AppError.UnexpectedFailure
+        assertEquals("LOCAL_UNEXPECTED_FAILURE", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `toResourceError wraps the AppError in a Resource Error carrying the message`() {
+        val err = AppError.RecorderAlreadyRunning
+        val cause = RuntimeException("boom")
+
+        val resource = err.toResourceError(cause)
+
+        assertEquals(err.message, resource.message)
+        assertSame(cause, resource.throwable)
+        assertSame(err, resource.error)
+    }
+
+    @Test
+    fun `toResourceError works without a throwable`() {
+        val err = AppError.EmptyAudioFile
+
+        val resource = err.toResourceError()
+
+        assertEquals(err.message, resource.message)
+        assertNull(resource.throwable)
+        assertSame(err, resource.error)
     }
 
     // endregion
