@@ -5,9 +5,11 @@ import com.ruizurraca.luziatestdavid.data.local.mapper.toDomain
 import com.ruizurraca.luziatestdavid.data.local.mapper.toEntity
 import com.ruizurraca.luziatestdavid.data.remote.api.L1ApiClient
 import com.ruizurraca.luziatestdavid.data.remote.mapper.ChatMapper
+import com.ruizurraca.luziatestdavid.data.remote.mapper.ErrorMapper
 import com.ruizurraca.luziatestdavid.data.remote.sse.SseEvent
 import com.ruizurraca.luziatestdavid.data.remote.sse.SseParser
 import com.ruizurraca.luziatestdavid.di.qualifier.IoDispatcher
+import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.repository.ChatRepository
@@ -27,6 +29,7 @@ class ChatRepositoryImpl @Inject constructor(
     private val apiClient: L1ApiClient,
     private val sseParser: SseParser,
     private val chatMapper: ChatMapper,
+    private val errorMapper: ErrorMapper,
     private val dao: ChatMessageDao,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ChatRepository {
@@ -42,7 +45,7 @@ class ChatRepositoryImpl @Inject constructor(
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (e: Throwable) {
-                Resource.Error(e.message ?: "Transcription failed", e)
+                e.toResourceError()
             }
         }
 
@@ -53,7 +56,7 @@ class ChatRepositoryImpl @Inject constructor(
             .map { it.toResource() }
             .catch { e ->
                 if (e is CancellationException) throw e
-                emit(Resource.Error(e.message ?: "Stream failed", e))
+                emit(e.toResourceError())
             }
             .flowOn(ioDispatcher)
     }
@@ -80,9 +83,24 @@ class ChatRepositoryImpl @Inject constructor(
             dao.deleteAll()
         }
     }
-}
 
-private fun SseEvent.toResource(): Resource<String> = when (this) {
-    is SseEvent.Token -> Resource.Success(text)
-    is SseEvent.Error -> Resource.Error("$code: $message")
+    private fun Throwable.toResourceError(): Resource.Error {
+        val appError = errorMapper.fromThrowable(this)
+        return Resource.Error(
+            message = appError.message,
+            throwable = this,
+            error = appError
+        )
+    }
+
+    private fun SseEvent.toResource(): Resource<String> = when (this) {
+        is SseEvent.Token -> Resource.Success(text)
+        is SseEvent.Error -> {
+            val appError = AppError.fromCode(code = code, message = message)
+            Resource.Error(
+                message = appError.message,
+                error = appError
+            )
+        }
+    }
 }
