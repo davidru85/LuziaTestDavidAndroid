@@ -24,7 +24,8 @@ class L1ApiClient @Inject constructor(
 
     suspend fun transcribe(
         audio: ByteArray,
-        filename: String = "audio.m4a"
+        filename: String = "audio.m4a",
+        lang: String? = null
     ): TranscribeResponseDto =
         httpClient.submitFormWithBinaryData(
             url = "transcribe",
@@ -37,6 +38,9 @@ class L1ApiClient @Inject constructor(
                         append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
                     }
                 )
+                if (lang != null) {
+                    append(key = "lang", value = lang)
+                }
             }
         ).body()
 

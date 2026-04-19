@@ -8,5 +8,6 @@ data class ChatMessageDto(
     val role: String,
     @SerialName("role_prompt")
     val rolePrompt: String? = null,
-    val content: String
+    val content: String,
+    val lang: String? = null
 )
