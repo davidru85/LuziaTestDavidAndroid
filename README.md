@@ -173,30 +173,54 @@ com.ruizurraca.luziatestdavid/
 
 ## Setup
 
-### Prerequisites
+Follow these four steps in order. The whole flow should take under 5 minutes on a machine that already has Android Studio + JDK 17 installed.
+
+### 1. Prerequisites
 
 - Android Studio Koala (2024.1.1) or newer, or command-line Gradle ≥ 8.11
 - JDK 17 (the Gradle `foojay-resolver-convention` plugin will fetch a matching toolchain if needed)
-- An AI backend reachable at the configured `BASE_URL` — see [TECHNICAL_SPEC.md §API Contracts](TECHNICAL_SPEC.md) for the wire shape
+- An AI backend reachable at the `BASE_URL_PRODUCTION` you configure below — see [TECHNICAL_SPEC.md §API Contracts](TECHNICAL_SPEC.md) for the wire shape the backend must honour
 
-### `local.properties`
+### 2. Create `local.properties` from the template
 
-Create the file at the project root with both flavour URLs. The build fails loudly (`IllegalStateException`) if either key is missing — no silent defaults.
-
-```properties
-BASE_URL_STAGING=http://127.0.0.1:8000
-BASE_URL_PRODUCTION=http://127.0.0.1:8000
-```
-
-On a physical device the backend must be reachable from the device's network. The Android emulator should use `http://10.0.2.2:8000` to reach the host machine's loopback.
-
-### Running
+The repository ships a [`local.properties.example`](local.properties.example) with placeholder values. Copy it to `local.properties` (which is gitignored) and customise for your machine:
 
 ```bash
-# Build + install the staging-debug APK on the connected device / emulator
+cp local.properties.example local.properties
+```
+
+Then open `local.properties` and edit these three variables:
+
+| Variable | What to set it to |
+| :--- | :--- |
+| `sdk.dir` | Absolute path to your local Android SDK. Typical values: `/Users/<you>/Library/Android/sdk` (macOS), `C:\\Users\\<you>\\AppData\\Local\\Android\\Sdk` (Windows), `/home/<you>/Android/Sdk` (Linux). Android Studio usually auto-generates `local.properties` on first project open with the correct `sdk.dir`, so if the file already exists and points at a valid SDK path, leave `sdk.dir` alone. |
+| `BASE_URL_PRODUCTION` | IP or hostname + port of your running backend server, e.g. `http://192.168.1.42:8000/` on a LAN, or `http://10.0.2.2:8000/` when running on the Android emulator to reach the host machine's loopback. |
+| `BASE_URL_STAGING` | Ships pre-configured with a public mockable.io URL so the `stagingDebug` variant works out of the box for demo / CI runs. Leave as-is unless you have a dedicated staging backend. |
+
+The build fails loudly (`IllegalStateException`) if either `BASE_URL_*` key is missing — no silent defaults. `sdk.dir` being missing / wrong is caught by Gradle with a conventional SDK-not-found error.
+
+### 3. Pick a build variant
+
+Two flavours, each pointing at a different `BASE_URL`:
+
+| Variant | Reads from | Use when… |
+| :--- | :--- | :--- |
+| **`stagingDebug`** | `BASE_URL_STAGING` (ships as a public mockable.io URL) | You want to explore the UI with pre-canned responses, no real backend required. Good for demos / CI. |
+| **`productionDebug`** | `BASE_URL_PRODUCTION` (your real backend) | You're running the app against your own backend instance (local LAN, cloud, etc.) — the path you almost certainly want for end-to-end testing. |
+
+Both variants are debuggable; the only difference is which `BASE_URL` is compiled into `BuildConfig`. See [Build Variants](#build-variants) for the full 2 × 3 matrix including the `release` / `benchmark` build types.
+
+### 4. Build, test, run
+
+```bash
+# Build + install a debug APK against your real backend (BASE_URL_PRODUCTION)
+./gradlew :app:installProductionDebug
+
+# …or install against the mockable.io demo backend (BASE_URL_STAGING)
 ./gradlew :app:installStagingDebug
 
-# Run the full unit-test suite (~497 tests, ~30 s)
+# Run the full unit-test suite (~497 tests, ~30 s). Variant here is arbitrary —
+# the tests don't hit the network; they use Ktor MockEngine.
 ./gradlew :app:testStagingDebugUnitTest
 
 # Lint (filters the AGP-9 compatibility baseline)
@@ -205,9 +229,11 @@ On a physical device the backend must be reachable from the device's network. Th
 # Coverage report → app/build/reports/jacoco/jacocoStagingDebugCoverageReport/html/
 ./gradlew :app:jacocoStagingDebugCoverageReport
 
-# Release build with R8 + resource shrinking
+# Release build with R8 + resource shrinking (~1.79 MB APK)
 ./gradlew :app:assembleStagingRelease
 ```
+
+Once the app is installed, launch it from the launcher, grant microphone permission when prompted, and tap the mic to record your first query. If the reply doesn't stream in, the most likely cause is an unreachable backend at the `BASE_URL` compiled into the installed variant — the app surfaces this as a Tier-1 Snackbar with the backend's error message.
 
 ---
 
