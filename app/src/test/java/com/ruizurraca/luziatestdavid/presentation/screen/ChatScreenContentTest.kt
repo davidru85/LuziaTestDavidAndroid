@@ -1,9 +1,11 @@
 package com.ruizurraca.luziatestdavid.presentation.screen
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -180,6 +182,9 @@ class ChatScreenContentTest {
 
     @Test
     fun retryOnLastFailedAssistant_invokesOnRetryLastFailure() {
+        // Phase 10.6.A moved the retry control out of the bubble and into a
+        // TextButton below it — the test now targets the button by its visible
+        // label rather than a contentDescription on an IconButton.
         var retries = 0
         setContent(
             state = ChatUiState.Idle(
@@ -191,9 +196,28 @@ class ChatScreenContentTest {
             onRetryLastFailure = { retries++ }
         )
 
-        composeTestRule.onNodeWithContentDescription("Retry reply").performClick()
+        composeTestRule.onNodeWithText("Retry reply").performClick()
 
         assertEquals(1, retries)
+    }
+
+    @Test
+    fun olderFailedAssistant_doesNotRenderRetryButton() {
+        // Only the LAST failed assistant is retryable — older failures below it
+        // must not show the retry button (copy in the bubble is already the
+        // apologetic "Sorry, empty message" variant per 7.3.3.B).
+        setContent(
+            state = ChatUiState.Idle(
+                messages = listOf(
+                    assistantMsg(id = "old-fail", streamState = AssistantStreamState.FAILED),
+                    userMsg(id = "u1", content = "pregunta"),
+                    assistantMsg(id = "latest-fail", streamState = AssistantStreamState.FAILED)
+                )
+            )
+        )
+
+        // Exactly one retry button in the whole screen — for the latest failure.
+        composeTestRule.onAllNodesWithText("Retry reply").assertCountEquals(1)
     }
 
     // ----- Delete-sweep + confirm flow ----------------------------------------
