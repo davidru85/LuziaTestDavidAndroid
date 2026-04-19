@@ -2,6 +2,7 @@ package com.ruizurraca.luziatestdavid.presentation.viewmodel
 
 import app.cash.turbine.test
 import com.ruizurraca.luziatestdavid.domain.audio.AudioRecorder
+import com.ruizurraca.luziatestdavid.domain.audio.TextSpeaker
 import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
 import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.util.Locale
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatViewModelTest {
@@ -52,6 +54,7 @@ class ChatViewModelTest {
     private val streamAssistantReply: StreamAssistantReplyUseCase = mockk()
     private val repository: ChatRepository = mockk()
     private val personaCatalog: PersonaCatalog = mockk()
+    private val textSpeaker: TextSpeaker = mockk(relaxed = true)
 
     private val conversation = MutableStateFlow<List<ChatMessage>>(emptyList())
 
@@ -112,7 +115,8 @@ class ChatViewModelTest {
         transcribeAudio = transcribeAudio,
         streamAssistantReply = streamAssistantReply,
         repository = repository,
-        personaCatalog = personaCatalog
+        personaCatalog = personaCatalog,
+        textSpeaker = textSpeaker
     )
 
     // ----- Initial state & observation ---------------------------------------
@@ -381,6 +385,110 @@ class ChatViewModelTest {
         // is destroyed while a recording is still in flight.
         vm.onCleared()
 
+        verify(exactly = 1) { audioRecorder.release() }
+    }
+
+    // endregion
+
+    // region Phase 10.6.D — TTS on last received assistant message
+
+    private val englishLocale: Locale = Locale.forLanguageTag("en-US")
+
+    @Test
+    fun `currentlySpeakingId defaults to null`() = runTest {
+        val vm = createViewModel()
+
+        assertNull(vm.currentlySpeakingId.value)
+    }
+
+    @Test
+    fun `onTtsTap on idle VM starts speaking and exposes messageId via currentlySpeakingId`() = runTest {
+        // speak() suspends indefinitely — simulates an in-flight utterance so the
+        // ID is observable while playback is active.
+        val speakGate = kotlinx.coroutines.CompletableDeferred<Resource<Unit>>()
+        coEvery { textSpeaker.speak(any(), any()) } coAnswers { speakGate.await() }
+        val vm = createViewModel()
+
+        vm.onTtsTap(messageId = "a1", text = "Hello", locale = englishLocale)
+
+        assertEquals("a1", vm.currentlySpeakingId.value)
+        coVerify(exactly = 1) { textSpeaker.speak("Hello", englishLocale) }
+        // clean up the dangling coroutine so runTest doesn't complain
+        speakGate.complete(Resource.Success(Unit))
+    }
+
+    @Test
+    fun `onTtsTap a second time on the same message stops playback and clears currentlySpeakingId`() = runTest {
+        val speakGate = kotlinx.coroutines.CompletableDeferred<Resource<Unit>>()
+        coEvery { textSpeaker.speak(any(), any()) } coAnswers { speakGate.await() }
+        val vm = createViewModel()
+        vm.onTtsTap(messageId = "a1", text = "Hello", locale = englishLocale)
+        assertEquals("a1", vm.currentlySpeakingId.value)
+
+        vm.onTtsTap(messageId = "a1", text = "Hello", locale = englishLocale)
+
+        assertNull(vm.currentlySpeakingId.value)
+        verify(atLeast = 1) { textSpeaker.stop() }
+        speakGate.complete(Resource.Success(Unit))
+    }
+
+    @Test
+    fun `onTtsTap on a different message while one is playing switches playback to the new message`() = runTest {
+        val firstGate = kotlinx.coroutines.CompletableDeferred<Resource<Unit>>()
+        val secondGate = kotlinx.coroutines.CompletableDeferred<Resource<Unit>>()
+        coEvery { textSpeaker.speak("First", any()) } coAnswers { firstGate.await() }
+        coEvery { textSpeaker.speak("Second", any()) } coAnswers { secondGate.await() }
+        val vm = createViewModel()
+        vm.onTtsTap(messageId = "a1", text = "First", locale = englishLocale)
+        assertEquals("a1", vm.currentlySpeakingId.value)
+
+        vm.onTtsTap(messageId = "a2", text = "Second", locale = englishLocale)
+
+        assertEquals("a2", vm.currentlySpeakingId.value)
+        verify(atLeast = 1) { textSpeaker.stop() }
+        coVerify(exactly = 1) { textSpeaker.speak("Second", englishLocale) }
+        firstGate.complete(Resource.Success(Unit))
+        secondGate.complete(Resource.Success(Unit))
+    }
+
+    @Test
+    fun `onTtsTap clears currentlySpeakingId when speak completes naturally`() = runTest {
+        coEvery { textSpeaker.speak(any(), any()) } returns Resource.Success(Unit)
+        val vm = createViewModel()
+
+        vm.onTtsTap(messageId = "a1", text = "Short utterance", locale = englishLocale)
+
+        assertNull(vm.currentlySpeakingId.value)
+    }
+
+    @Test
+    fun `onTtsTap emits Tier1 TtsUnavailable event when speak returns TtsUnavailable error`() = runTest {
+        coEvery {
+            textSpeaker.speak(any(), any())
+        } returns AppError.TtsUnavailable.toResourceError()
+        val vm = createViewModel()
+
+        vm.events.test {
+            vm.onTtsTap(messageId = "a1", text = "Hello", locale = englishLocale)
+            val event = awaitItem()
+            assertTrue(
+                event is ChatEvent.Tier1 && event.kind == Tier1Kind.TtsUnavailable
+            ) {
+                "expected Tier1(TtsUnavailable), got $event"
+            }
+        }
+        assertNull(vm.currentlySpeakingId.value)
+    }
+
+    @Test
+    fun `onCleared releases the TextSpeaker alongside the AudioRecorder`() = runTest {
+        every { audioRecorder.release() } just Runs
+        every { textSpeaker.release() } just Runs
+        val vm = createViewModel()
+
+        vm.onCleared()
+
+        verify(exactly = 1) { textSpeaker.release() }
         verify(exactly = 1) { audioRecorder.release() }
     }
 
