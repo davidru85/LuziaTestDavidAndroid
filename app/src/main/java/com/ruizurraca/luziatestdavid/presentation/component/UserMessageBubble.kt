@@ -19,9 +19,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.ruizurraca.luziatestdavid.R
 import com.ruizurraca.luziatestdavid.presentation.model.ChatMessageUiModel
 import com.ruizurraca.luziatestdavid.presentation.model.UserDeliveryState
 
@@ -65,22 +67,25 @@ private fun DeliveryStateIndicator(state: UserDeliveryState) {
     val iconSize = 14.dp
     val tint = MaterialTheme.colorScheme.onPrimaryContainer
     when (state) {
-        UserDeliveryState.SENDING -> CircularProgressIndicator(
-            modifier = Modifier
-                .size(iconSize)
-                .semantics { contentDescription = "Sending message" },
-            strokeWidth = 1.5.dp,
-            color = tint.copy(alpha = 0.7f)
-        )
+        UserDeliveryState.SENDING -> {
+            val sendingDescription = stringResource(R.string.cd_sending_message)
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(iconSize)
+                    .semantics { contentDescription = sendingDescription },
+                strokeWidth = 1.5.dp,
+                color = tint.copy(alpha = 0.7f)
+            )
+        }
         UserDeliveryState.SENT -> Icon(
             imageVector = Icons.Filled.Check,
-            contentDescription = "Message sent",
+            contentDescription = stringResource(R.string.cd_message_sent),
             modifier = Modifier.size(iconSize),
             tint = tint.copy(alpha = 0.7f)
         )
         UserDeliveryState.FAILED -> Icon(
             imageVector = Icons.Filled.Warning,
-            contentDescription = "Failed to send",
+            contentDescription = stringResource(R.string.cd_failed_to_send),
             modifier = Modifier.size(iconSize),
             tint = MaterialTheme.colorScheme.error
         )

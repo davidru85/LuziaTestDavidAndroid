@@ -1,0 +1,77 @@
+<resources>
+    <!-- Peninsular Spanish translations (Phase 7.3.3.F). See MEMORY.md §Phase 7.3.3
+         for translation style notes + Fork 4 role_prompts risk note. -->
+
+    <!-- Streaming indicator labels (Phase 7.3.3.G) -->
+    <string name="label_recording">Grabando…</string>
+    <string name="label_transcribing">Transcribiendo…</string>
+    <string name="label_thinking">Pensando…</string>
+
+    <!-- Tier-1 Snackbar copy (Phase 7.3.3.H) -->
+    <string name="tier1_bad_request">La solicitud no es válida.</string>
+    <string name="tier1_file_too_large">El archivo de audio es demasiado grande.</string>
+    <string name="tier1_timeout">La solicitud ha caducado.</string>
+    <string name="tier1_network">Error de conexión de red.</string>
+    <string name="tier1_validation_error">Revisa los datos introducidos e inténtalo de nuevo.</string>
+    <string name="tier1_recorder_already_running">Ya hay una grabación en curso.</string>
+    <string name="tier1_recorder_not_active">No hay ninguna grabación activa.</string>
+    <string name="tier1_recorder_no_output">No hay archivo de salida para la grabación.</string>
+    <string name="tier1_recorder_start_failed">No se ha podido iniciar la grabación. Inténtalo de nuevo.</string>
+    <string name="tier1_recorder_stop_failed">No se ha podido detener la grabación. Inténtalo de nuevo.</string>
+    <string name="tier1_empty_audio_file">El archivo de audio está vacío. Graba de nuevo, por favor.</string>
+    <string name="tier1_empty_conversation_history">Empieza una conversación primero.</string>
+    <string name="tier1_streaming_failed">Se ha interrumpido la transmisión de la respuesta. Inténtalo de nuevo.</string>
+    <string name="tier1_unexpected_failure">Algo ha fallado. Inténtalo de nuevo.</string>
+
+    <string-array name="role_names">
+        <item>Estudiante</item>
+        <item>Científico</item>
+        <item>Artista</item>
+    </string-array>
+
+    <string-array name="role_prompts">
+        <item>Eres un tutor paciente y didáctico. Explica los conceptos paso a paso y fomenta el aprendizaje.</item>
+        <item>Eres un científico riguroso. Ofrece respuestas analíticas, precisas y basadas en evidencias.</item>
+        <item>Eres un artista creativo. Piensa con imaginación, propón ideas y despierta la creatividad.</item>
+    </string-array>
+
+    <!-- Accessibility content descriptions -->
+    <string name="cd_record_voice_message">Grabar mensaje de voz</string>
+    <string name="cd_stop_recording">Detener grabación</string>
+    <string name="cd_send_message">Enviar mensaje</string>
+    <string name="cd_clear_conversation">Borrar conversación</string>
+    <string name="cd_message_input">Entrada de mensaje</string>
+    <string name="cd_loading_response">Cargando respuesta</string>
+    <string name="cd_reply_failed">Respuesta fallida</string>
+    <string name="cd_retry_reply">Reintentar respuesta</string>
+    <string name="cd_sending_message">Enviando mensaje</string>
+    <string name="cd_message_sent">Mensaje enviado</string>
+    <string name="cd_failed_to_send">No se pudo enviar</string>
+
+    <!-- Dialog copy -->
+    <string name="dialog_mic_permission_title">Permiso de micrófono necesario</string>
+    <string name="dialog_mic_permission_message">Luzia necesita acceso al micrófono para transcribir tu voz en texto.</string>
+    <string name="dialog_retry">Reintentar</string>
+    <string name="dialog_cancel">Cancelar</string>
+    <string name="dialog_ok">Aceptar</string>
+    <string name="dialog_clear_conversation_title">¿Borrar la conversación?</string>
+    <string name="dialog_clear_conversation_message">Se eliminarán todos los mensajes.</string>
+    <string name="dialog_clear">Borrar</string>
+
+    <!-- Input bar placeholder -->
+    <string name="input_placeholder">Escribe un mensaje o toca el micro…</string>
+
+    <!-- Failed assistant bubble copy -->
+    <string name="bubble_failed_latest_message">Me he quedado en blanco. ¿Quieres intentarlo de nuevo?</string>
+    <string name="bubble_failed_older_message">Perdona, mensaje vacío</string>
+
+    <!-- Tier-3 AlertDialog copy -->
+    <string name="dialog_tier3_service_unavailable_title">Servicio no disponible</string>
+    <string name="dialog_tier3_service_unavailable_body">Ahora mismo no podemos conectar con Luzia. Prueba de nuevo en unos instantes.</string>
+    <string name="dialog_tier3_internal_title">Algo ha fallado</string>
+    <string name="dialog_tier3_internal_body">Luzia ha tenido un error inesperado. Puedes intentar enviar el mensaje otra vez.</string>
+    <string name="dialog_tier3_unexpected_title">Error inesperado</string>
+    <string name="dialog_tier3_unexpected_body">Ha pasado algo que no esperábamos. Vuelve a intentarlo — si sigue ocurriendo, avísanos.</string>
+    <string name="dialog_tier3_show_details">Mostrar detalles</string>
+    <string name="dialog_tier3_hide_details">Ocultar detalles</string>
+</resources>

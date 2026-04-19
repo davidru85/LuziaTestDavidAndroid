@@ -5,6 +5,7 @@ import android.media.MediaRecorder
 import android.os.Build
 import com.ruizurraca.luziatestdavid.di.qualifier.MainDispatcher
 import com.ruizurraca.luziatestdavid.domain.audio.AudioRecorder
+import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -24,7 +25,7 @@ class MediaRecorderAudioRecorder @Inject constructor(
 
     override suspend fun start(): Resource<Unit> = withContext(mainDispatcher) {
         if (currentRecorder != null) {
-            return@withContext Resource.Error("Recording already in progress.")
+            return@withContext AppError.RecorderAlreadyRunning.toResourceError()
         }
         try {
             val file = createOutputFile()
@@ -41,15 +42,15 @@ class MediaRecorderAudioRecorder @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Throwable) {
             releaseQuietly()
-            Resource.Error(e.message ?: "Failed to start recording.", e)
+            AppError.RecorderStartFailed.toResourceError(e)
         }
     }
 
     override suspend fun stop(): Resource<File> = withContext(mainDispatcher) {
         val recorder = currentRecorder
-            ?: return@withContext Resource.Error("No active recording.")
+            ?: return@withContext AppError.RecorderNotActive.toResourceError()
         val file = currentFile
-            ?: return@withContext Resource.Error("No output file for recording.")
+            ?: return@withContext AppError.RecorderNoOutputFile.toResourceError()
         try {
             recorder.stop()
             recorder.release()
@@ -58,7 +59,7 @@ class MediaRecorderAudioRecorder @Inject constructor(
             Resource.Success(file)
         } catch (e: Throwable) {
             releaseQuietly()
-            Resource.Error(e.message ?: "Failed to stop recording.", e)
+            AppError.RecorderStopFailed.toResourceError(e)
         }
     }
 
@@ -73,6 +74,16 @@ class MediaRecorderAudioRecorder @Inject constructor(
     private fun createOutputFile(): File {
         val dir = File(context.cacheDir, "audio").apply { mkdirs() }
         return File(dir, "luzia_${System.currentTimeMillis()}.m4a")
+    }
+
+    override fun release() {
+        val fileToDelete = currentFile
+        releaseQuietly()
+        // Also drop the in-flight temp .m4a; the owning UI is going away so no
+        // one is going to transcribe it (Phase 7.4.B).
+        if (fileToDelete != null) {
+            runCatching { fileToDelete.delete() }
+        }
     }
 
     private fun releaseQuietly() {

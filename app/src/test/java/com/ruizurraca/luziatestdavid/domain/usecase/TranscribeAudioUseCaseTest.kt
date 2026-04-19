@@ -1,5 +1,6 @@
 package com.ruizurraca.luziatestdavid.domain.usecase
 
+import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.repository.ChatRepository
 import io.mockk.coEvery
@@ -50,22 +51,24 @@ class TranscribeAudioUseCaseTest {
     }
 
     @Test
-    fun `invoke rejects non-existent audio file with Error and skips repository`() = runTest {
+    fun `invoke rejects non-existent audio file with EmptyAudioFile AppError and skips repository`() = runTest {
         val missing = File(tempDir, "does-not-exist.m4a")
 
         val result = useCase(missing)
 
         assertTrue(result is Resource.Error)
+        assertEquals(AppError.EmptyAudioFile, (result as Resource.Error).error)
         coVerify(exactly = 0) { repository.transcribeAudio(any()) }
     }
 
     @Test
-    fun `invoke rejects empty audio file with Error and skips repository`() = runTest {
+    fun `invoke rejects empty audio file with EmptyAudioFile AppError and skips repository`() = runTest {
         val empty = File(tempDir, "empty.m4a").apply { createNewFile() }
 
         val result = useCase(empty)
 
         assertTrue(result is Resource.Error)
+        assertEquals(AppError.EmptyAudioFile, (result as Resource.Error).error)
         coVerify(exactly = 0) { repository.transcribeAudio(any()) }
     }
 }

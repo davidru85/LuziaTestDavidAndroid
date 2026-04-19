@@ -16,6 +16,7 @@ import com.ruizurraca.luziatestdavid.presentation.model.toUiModels
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
 import com.ruizurraca.luziatestdavid.presentation.state.ProcessingKind
+import com.ruizurraca.luziatestdavid.presentation.state.Tier1Kind
 import com.ruizurraca.luziatestdavid.presentation.state.toChatEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -98,9 +99,17 @@ class ChatViewModel @Inject constructor(
             phase.value = Phase.Processing(ProcessingKind.TRANSCRIBING)
             when (val stopResult = audioRecorder.stop()) {
                 is Resource.Success -> {
-                    when (val transcribeResult = transcribeAudio(stopResult.data)) {
-                        is Resource.Success -> draft.value = transcribeResult.data
-                        is Resource.Error -> _events.tryEmit(transcribeResult.toTieredEvent())
+                    val audioFile = stopResult.data
+                    try {
+                        when (val transcribeResult = transcribeAudio(audioFile)) {
+                            is Resource.Success -> draft.value = transcribeResult.data
+                            is Resource.Error -> _events.tryEmit(transcribeResult.toTieredEvent())
+                        }
+                    } finally {
+                        // Clean up the temp .m4a regardless of transcription outcome
+                        // (Phase 7.4). The backend has it (on success) or doesn't need
+                        // it (on failure) — keeping the file around just leaks cache.
+                        audioFile.delete()
                     }
                 }
                 is Resource.Error -> _events.tryEmit(stopResult.toTieredEvent())
@@ -159,6 +168,17 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Widened to `public` so unit tests can simulate the framework invoking this
+     * lifecycle hook directly (framework's `ViewModel.clear()` is `internal`).
+     * Releases the recorder if any recording is in flight, so a backgrounded
+     * MediaRecorder doesn't keep holding the mic / writing to disk (Phase 7.4.B).
+     */
+    public override fun onCleared() {
+        audioRecorder.release()
+        super.onCleared()
+    }
+
     private fun activePersonaPrompt(): String =
         personaCatalog.entries().first { it.persona == _selectedPersona.value }.prompt
 
@@ -175,6 +195,16 @@ class ChatViewModel @Inject constructor(
         phase.value = Phase.Idle
     }
 
+    /**
+     * Route a `Resource.Error` to a tier-classified [ChatEvent]. When the error
+     * carries a populated [com.ruizurraca.luziatestdavid.domain.common.AppError],
+     * [toChatEvent] handles resolution. Otherwise (legacy / untyped errors — e.g.
+     * test fixtures) we surface the raw message as an Unknown Tier-1 so the
+     * composable shows it verbatim.
+     */
     private fun Resource.Error.toTieredEvent(): ChatEvent =
-        error?.toChatEvent() ?: ChatEvent.Tier1(message)
+        error?.toChatEvent() ?: ChatEvent.Tier1(
+            kind = Tier1Kind.Unknown,
+            backendMessage = message.takeIf { it.isNotBlank() }
+        )
 }

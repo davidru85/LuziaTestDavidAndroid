@@ -16,12 +16,15 @@ import com.ruizurraca.luziatestdavid.domain.usecase.TranscribeAudioUseCase
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
 import com.ruizurraca.luziatestdavid.presentation.state.ProcessingKind
+import com.ruizurraca.luziatestdavid.presentation.state.Tier1Kind
+import com.ruizurraca.luziatestdavid.presentation.state.Tier3Kind
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -34,6 +37,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -176,8 +181,12 @@ class ChatViewModelTest {
         vm.events.test {
             vm.startRecording()
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Tier1 && event.message == "mic busy") {
-                "expected ChatEvent.Tier1('mic busy'), got $event"
+            assertTrue(
+                event is ChatEvent.Tier1 &&
+                    event.kind == Tier1Kind.Unknown &&
+                    event.backendMessage == "mic busy"
+            ) {
+                "expected legacy-path Tier1(Unknown, backendMessage='mic busy'), got $event"
             }
         }
 
@@ -185,7 +194,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `stopRecording happy path transcribes and populates draft`() = runTest {
+    fun `stopRecording happy path transcribes populates draft and deletes temp audio file`() = runTest {
         coEvery { audioRecorder.start() } returns Resource.Success(Unit)
         val fakeFile = File.createTempFile("luzia", ".m4a")
         coEvery { audioRecorder.stop() } returns Resource.Success(fakeFile)
@@ -200,11 +209,12 @@ class ChatViewModelTest {
         assertTrue(state is ChatUiState.Idle) { "expected Idle after transcription, got $state" }
         assertEquals("hola qué tal", state.draft)
         coVerify(exactly = 1) { transcribeAudio(fakeFile) }
-        fakeFile.delete()
+        // Temp .m4a deleted after successful transcription (Phase 7.4.A)
+        assertFalse(fakeFile.exists()) { "expected temp audio file deleted, still at ${fakeFile.absolutePath}" }
     }
 
     @Test
-    fun `stopRecording transcription failure returns to Idle and emits error`() = runTest {
+    fun `stopRecording transcription failure returns to Idle, emits error, and still deletes temp audio`() = runTest {
         coEvery { audioRecorder.start() } returns Resource.Success(Unit)
         val fakeFile = File.createTempFile("luzia", ".m4a")
         coEvery { audioRecorder.stop() } returns Resource.Success(fakeFile)
@@ -217,14 +227,20 @@ class ChatViewModelTest {
             vm.stopRecording()
 
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Tier1 && event.message == "transcription failed") {
-                "expected ChatEvent.Tier1('transcription failed'), got $event"
+            assertTrue(
+                event is ChatEvent.Tier1 &&
+                    event.kind == Tier1Kind.Unknown &&
+                    event.backendMessage == "transcription failed"
+            ) {
+                "expected legacy-path Tier1(Unknown, backendMessage='transcription failed'), got $event"
             }
         }
 
+        // Temp .m4a is deleted regardless of transcription outcome (Phase 7.4.A)
+        assertFalse(fakeFile.exists()) { "expected temp audio file deleted, still at ${fakeFile.absolutePath}" }
+
         assertTrue(vm.state.value is ChatUiState.Idle)
         assertEquals("", vm.state.value.draft)
-        fakeFile.delete()
     }
 
     // ----- Text send flow ----------------------------------------------------
@@ -287,8 +303,12 @@ class ChatViewModelTest {
             vm.onSendTap()
 
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Tier1 && event.message == "backend down") {
-                "expected ChatEvent.Tier1('backend down'), got $event"
+            assertTrue(
+                event is ChatEvent.Tier1 &&
+                    event.kind == Tier1Kind.Unknown &&
+                    event.backendMessage == "backend down"
+            ) {
+                "expected legacy-path Tier1(Unknown, backendMessage='backend down'), got $event"
             }
         }
 
@@ -296,11 +316,12 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `stream error carrying AppError Internal emits Tier3 event`() = runTest {
+    fun `stream error carrying AppError Internal emits Tier3 event with InternalError kind`() = runTest {
+        val internalError = AppError.Internal()
         every { streamAssistantReply(any()) } returns flowOf(
             Resource.Error(
-                message = AppError.Internal.message,
-                error = AppError.Internal
+                message = internalError.message,
+                error = internalError
             )
         )
 
@@ -312,7 +333,9 @@ class ChatViewModelTest {
 
             val event = awaitItem()
             assertTrue(event is ChatEvent.Tier3) { "expected ChatEvent.Tier3, got $event" }
-            assertEquals(AppError.Internal.message, (event as ChatEvent.Tier3).message)
+            val tier3 = event as ChatEvent.Tier3
+            assertEquals(Tier3Kind.InternalError, tier3.kind)
+            assertEquals(internalError.message, tier3.detailsMessage)
         }
 
         assertTrue(vm.state.value is ChatUiState.Idle)
@@ -320,10 +343,11 @@ class ChatViewModelTest {
 
     @Test
     fun `stream error carrying AppError BadRequest emits Tier1 event with AppError message`() = runTest {
+        val badRequest = AppError.BadRequest()
         every { streamAssistantReply(any()) } returns flowOf(
             Resource.Error(
-                message = AppError.BadRequest.message,
-                error = AppError.BadRequest
+                message = badRequest.message,
+                error = badRequest
             )
         )
 
@@ -335,11 +359,32 @@ class ChatViewModelTest {
 
             val event = awaitItem()
             assertTrue(event is ChatEvent.Tier1) { "expected ChatEvent.Tier1, got $event" }
-            assertEquals(AppError.BadRequest.message, (event as ChatEvent.Tier1).message)
+            val tier1 = event as ChatEvent.Tier1
+            assertEquals(Tier1Kind.BadRequest, tier1.kind)
+            // Default BadRequest rawMessage → backendMessage is null (composable
+            // resolves the translated kind copy).
+            assertNull(tier1.backendMessage)
         }
     }
 
     // ----- Clear conversation ------------------------------------------------
+
+    // region Phase 7.4.B — defensive recorder release on VM clear
+
+    @Test
+    fun `onCleared releases the audio recorder so background recordings are torn down`() = runTest {
+        every { audioRecorder.release() } just Runs
+        val vm = createViewModel()
+
+        // Invoke the lifecycle hook directly — the override is widened to public
+        // so tests can simulate what the framework does when the owning Activity
+        // is destroyed while a recording is still in flight.
+        vm.onCleared()
+
+        verify(exactly = 1) { audioRecorder.release() }
+    }
+
+    // endregion
 
     @Test
     fun `onClearConversation delegates to repository`() = runTest {

@@ -13,8 +13,10 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.ruizurraca.luziatestdavid.R
 import com.ruizurraca.luziatestdavid.domain.model.Persona
 import com.ruizurraca.luziatestdavid.domain.model.PersonaEntry
 import com.ruizurraca.luziatestdavid.presentation.component.AssistantMessageBubble
@@ -53,7 +55,7 @@ fun ChatScreenContent(
         modifier = modifier.fillMaxSize(),
         topBar = {
             ChatTopAppBar(
-                title = "Luzia",
+                title = stringResource(R.string.app_title),
                 isConversationEmpty = state.messages.isEmpty(),
                 onConfirmClearConversation = onConfirmClearConversation
             )
@@ -100,12 +102,13 @@ fun ChatScreenContent(
     }
 }
 
+@Composable
 private fun ChatUiState.streamingIndicatorLabel(): String? = when (this) {
     is ChatUiState.Idle -> null
-    is ChatUiState.Listening -> "Recording…"
+    is ChatUiState.Listening -> stringResource(R.string.label_recording)
     is ChatUiState.Processing -> when (kind) {
-        ProcessingKind.TRANSCRIBING -> "Transcribing…"
-        ProcessingKind.AWAITING_REPLY -> "Thinking…"
+        ProcessingKind.TRANSCRIBING -> stringResource(R.string.label_transcribing)
+        ProcessingKind.AWAITING_REPLY -> stringResource(R.string.label_thinking)
     }
     is ChatUiState.Streaming -> null
 }

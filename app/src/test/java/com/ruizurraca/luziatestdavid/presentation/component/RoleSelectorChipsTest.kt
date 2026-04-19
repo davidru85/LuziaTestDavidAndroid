@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.ruizurraca.luziatestdavid.domain.model.Persona
@@ -158,6 +159,53 @@ class RoleSelectorChipsTest {
         composeTestRule.onNodeWithText("Scientist").assert(isRadioButton)
         composeTestRule.onNodeWithText("Artist").assert(isRadioButton)
     }
+
+    // region Phase 7.3.3.E — persona icons persistent across chips
+
+    @Test
+    fun eachChip_displaysItsPersonaSpecificLeadingIcon() {
+        composeTestRule.setContent {
+            LuziaTheme {
+                RoleSelectorChips(
+                    entries = entries,
+                    selectedPersona = Persona.STUDENT,
+                    onPersonaSelected = {}
+                )
+            }
+        }
+
+        // Icons are persistent (always visible, not just on the selected chip) so each
+        // persona has a stable visual identity. testTag is the stable handle —
+        // ImageVector equality via semantics isn't directly exposed. useUnmergedTree
+        // because FilterChip merges the leadingIcon's semantics into the chip node.
+        composeTestRule.onNodeWithTag("persona-icon-STUDENT", useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("persona-icon-SCIENTIST", useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("persona-icon-ARTIST", useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun personaIcons_remainVisibleOnUnselectedChips() {
+        composeTestRule.setContent {
+            LuziaTheme {
+                RoleSelectorChips(
+                    entries = entries,
+                    selectedPersona = Persona.ARTIST,
+                    onPersonaSelected = {}
+                )
+            }
+        }
+
+        // Non-selected personas still display their icon.
+        composeTestRule.onNodeWithTag("persona-icon-STUDENT", useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("persona-icon-SCIENTIST", useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    // endregion
 
     @Test
     fun emptyEntries_rendersNoChips() {

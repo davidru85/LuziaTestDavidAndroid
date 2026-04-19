@@ -84,7 +84,7 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun Throwable.toResourceError(): Resource.Error {
+    private suspend fun Throwable.toResourceError(): Resource.Error {
         val appError = errorMapper.fromThrowable(this)
         return Resource.Error(
             message = appError.message,

@@ -1,6 +1,7 @@
 package com.ruizurraca.luziatestdavid.domain.usecase
 
 import app.cash.turbine.test
+import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.model.MessageRole
@@ -70,7 +71,7 @@ class SendMessageUseCaseTest {
     }
 
     @Test
-    fun `invoke wraps upstream exceptions as Resource Error`() = runTest {
+    fun `invoke wraps upstream exceptions as Resource Error carrying StreamingFailed AppError`() = runTest {
         every { repository.streamChat(history) } returns flow {
             emit(Resource.Success("partial"))
             throw RuntimeException("socket reset")
@@ -80,15 +81,17 @@ class SendMessageUseCaseTest {
             assertTrue(awaitItem() is Resource.Success)
             val err = awaitItem()
             assertTrue(err is Resource.Error)
+            assertEquals(AppError.StreamingFailed, (err as Resource.Error).error)
             awaitComplete()
         }
     }
 
     @Test
-    fun `invoke rejects empty history with Error emission`() = runTest {
+    fun `invoke rejects empty history with EmptyConversationHistory AppError`() = runTest {
         useCase(emptyList()).test {
             val emission = awaitItem()
             assertTrue(emission is Resource.Error)
+            assertEquals(AppError.EmptyConversationHistory, (emission as Resource.Error).error)
             awaitComplete()
         }
 

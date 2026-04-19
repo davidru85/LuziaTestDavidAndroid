@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -48,7 +49,13 @@ class ChatRepositoryImplTest {
     private val apiClient: L1ApiClient = mockk()
     private val sseParser = SseParser()
     private val chatMapper = ChatMapper()
-    private val errorMapper = ErrorMapper()
+    private val errorMapper = ErrorMapper(
+        json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            explicitNulls = false
+        }
+    )
     private val dao: ChatMessageDao = mockk()
     private val dispatcher = UnconfinedTestDispatcher()
 
@@ -90,7 +97,7 @@ class ChatRepositoryImplTest {
 
         assertTrue(result is Resource.Error)
         val error = result as Resource.Error
-        assertEquals(AppError.Network, error.error)
+        assertEquals(AppError.Network(), error.error)
     }
 
     // endregion
@@ -134,7 +141,8 @@ class ChatRepositoryImplTest {
             val emission = awaitItem()
             assertTrue(emission is Resource.Error) { "expected Error, got $emission" }
             val error = emission as Resource.Error
-            assertEquals(AppError.Internal, error.error)
+            // SSE error event supplies a message ("boom") that now rides through on the variant.
+            assertEquals(AppError.Internal(rawMessage = "boom"), error.error)
             awaitComplete()
         }
     }
@@ -151,7 +159,7 @@ class ChatRepositoryImplTest {
             val emission = awaitItem()
             assertTrue(emission is Resource.Error)
             val error = emission as Resource.Error
-            assertEquals(AppError.ServiceUnavailable, error.error)
+            assertEquals(AppError.ServiceUnavailable(rawMessage = "down"), error.error)
             awaitComplete()
         }
     }
@@ -169,7 +177,8 @@ class ChatRepositoryImplTest {
             val tail = awaitItem()
             assertTrue(tail is Resource.Error) { "expected Error, got $tail" }
             val error = tail as Resource.Error
-            assertEquals(AppError.Network, error.error)
+            // IOException doesn't carry a parseable body — default Network instance.
+            assertEquals(AppError.Network(), error.error)
             awaitComplete()
         }
     }

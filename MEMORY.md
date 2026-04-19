@@ -94,6 +94,36 @@ Manual E2E testing (Phase 7.1.2) against the backend returned `422 VALIDATION_ER
 
 **Deferred (Phase 7.1.4):** empty-`content` assistant rows observed lingering in Room after failed streams — a separate, client-only defect unrelated to the wire-format change.
 
+### Fork 5 — `/transcribe` contract revision for empty / too-short audio (2026-04-18, API_SPEC v1.2.0)
+
+Manual Phase 7.2 edge-case testing against the backend revealed — and the backend team then fixed — a contract defect on `/transcribe`:
+
+**Before (v1.1.0):** empty or too-short audio surfaced as `502 UPSTREAM_ERROR` ("Transcription service failed. Please try again."). Misleading because `502` implies a Whisper outage, encouraging the client to retry — but the actual cause is user-actionable (bad input).
+
+**After (v1.2.0, deployed 2026-04-18):** empty or too-short audio now returns:
+
+```
+HTTP 400 Bad Request
+{ "error": { "code": "BAD_REQUEST", "message": "Audio file is empty or too short to transcribe." } }
+```
+
+One byte-level verbatim string covers both sub-cases (zero-byte local guard + Whisper 4xx). `502 UPSTREAM_ERROR` is now reserved for genuine Whisper-side 5xx / network / timeout.
+
+**Client-side implications:**
+
+1.  `AppError.fromCode("BAD_REQUEST", "Audio file is empty or too short…")` **currently discards the backend message** — the `BadRequest` variant is a `data object` with a fixed generic message ("The request was invalid."). The user sees the generic string, not the actionable "empty or too short" guidance. Fix to preserve backend-supplied messages verbatim lands in **Phase 7.2** (scoped below).
+2.  Do **not** auto-retry `/transcribe` 4xx responses. The app never did, but worth pinning explicitly — a future Phase 7.2 retry-on-error helper must skip 400/413/415.
+3.  The `/transcribe` response on Whisper-hallucinated `"you"` for short audio (non-error, `200 OK`) is indistinguishable from a valid transcription on the client side. Surface as-is; no special handling required.
+
+**Backend-side open questions (deferred, not in Phase 7.2 scope):**
+
+*   Whether the Android client should add a pre-upload duration guard (< 0.3s reject locally before upload) is a design call, not a contract issue. Trade-off: saves a round-trip but duplicates backend validation. Current position: skip — backend is authoritative, Golden Rule #2 favours capture-and-transmit simplicity.
+*   Whether to request a structured `error.details.reason` from the backend for analytics (distinguish zero-byte from too-short). Not needed for Phase 7.2 UX.
+
+**Impacted specs:** `TECHNICAL_SPEC.md §API Contracts #1` — rewritten with the new error table.
+
+---
+
 #### Fork 4 addendum — backend decisions locked in (2026-04-18)
 
 Backend team responded with their API_SPEC.md v1.1.0. Points that bind the Android client:
@@ -139,4 +169,43 @@ Each sub-task follows the TDD cycle (🔴 RED → 🟢 GREEN → 🔵 REFACTOR) 
 1. **Golden Rules** (`CONTEXT.md`): Zero Local ASR/TTS · Zero Local Audio Processing · Domain Purity · No Data Leakage · Strict TDD · Text-Only UI.
 2. `DomainPurityTest` and `PresentationPurityTest` must stay green through every 5.5 sub-task.
 3. **Room migration strategy:** destructive (pre-launch, no users). Version bump is acceptable in 5.5.B.
-4. **Accessibility content descriptions:** English hardcoded strings for now (e.g., "Record voice message", "Sending message"). Migration to `stringResource()` is a Phase 7 polish item.
+4. **Accessibility content descriptions:** English hardcoded strings for now (e.g., "Record voice message", "Sending message"). Migration to `stringResource()` is a Phase 7 polish item. → **Shipped in 7.3.1.A** (2026-04-18); default English pinned + Spanish/Portuguese translations scheduled for 7.3.3.F.
+
+---
+
+## Phase 7.3.3 — UX Decisions Locked (2026-04-18)
+
+User-surfaced UX suggestions + design decisions for Phase 7.3.3 (UI/UX Improvements).
+
+### Sub-task scope
+
+*Ordering:* A → B → C → D → E → F (quick wins first, i18n last so it translates the final stabilised copy).
+
+**7.3.3.A — Record → Stop icon swap while recording.** Today `Icons.Filled.Mic` is shown in both idle and recording states; only `contentDescription` toggles. Change to `Icons.Filled.Stop` (or equivalent) when `isRecording`. Purely visual — existing `MorphingActionButtonTest` contentDescription checks cover the semantic surface.
+
+**7.3.3.B — FAILED assistant bubble copy, split by position:**
+*   *Latest* FAILED assistant (retryable via `onRetryLastFailure`): **"I've gone blank. Mind retrying?"** + retry button.
+*   *Older* FAILED assistants (non-retryable — only the last failure reaches `onRetryLastFailure`): **"Sorry, empty message"** + no retry button.
+*   Disambiguation already wired via the existing `onRetry: (() -> Unit)?` parameter (non-null on the latest, null on older). No domain-model change needed.
+*   Copy goes into `strings.xml` → translated in 7.3.3.F.
+
+**7.3.3.C — Tier-3 AlertDialog — M3 Expressive redesign + Option-B copy strategy.**
+*   Current shape: backend message displayed verbatim in the AlertDialog body, title hardcoded (`"Service error"` / `"Unexpected error"`).
+*   Target shape: hand-written friendly copy keyed by `AppError` variant (`Internal`, `ServiceUnavailable`, `Unknown` all go through Tier-3). Backend message preserved in a collapsible "Details" section for debugging.
+*   Re-plumbing: `ChatEvent.Tier3.title: String` → `Tier3.kind: Tier3Kind` enum. Composable resolves icon + `stringResource` title + friendly body + backend-details. Unblocks 7.3.1's deferred title-i18n.
+*   M3 Expressive visuals: icon slot, accent colour per severity, cleaner typographic hierarchy.
+
+**7.3.3.D — Mic permission rationale + Clear conversation confirm dialogs — M3 Expressive polish.** Icon slots, minor copy touch-ups, likely share the reusable `LuziaAlertDialog` wrapper introduced in 7.3.3.C.
+
+**7.3.3.E — Role selector — icons per persona + motion on selection.**
+*   Icons per persona (to be chosen during implementation — candidates: Student → graduation cap / book, Scientist → science / atom, Artist → palette).
+*   Motion: animated scale or ripple on the chip being selected.
+*   M3 `FilterChip` strip retained — single-select + `Role.RadioButton` semantics from 5.5.F unchanged. Visual layer only.
+
+**7.3.3.F — i18n: neutral Spanish (`values-es`) + neutral Portuguese (`values-pt`).**
+*   Scope: every string in `res/values/strings.xml` including `role_names`, `role_prompts`, the 20+ entries added in 7.3.1.A, and the 7.3.3.B / 7.3.3.C copy.
+*   Tests: one pinning file per locale (`A11yStringMigrationEsTest`, `A11yStringMigrationPtTest`) using Robolectric `@Config(qualifiers = "es")` / `@Config(qualifiers = "pt")`. Same pattern as the existing English `A11yStringMigrationTest`. ~40 new assertions.
+
+### Risks flagged
+
+**`role_prompts` translation risk:** `role_prompts` strings are sent to the backend as the per-user-message `role_prompt` that steers the LLM (per Fork 4). Translating them changes the language of the system prompt delivered to the upstream model. In practice most chat LLMs reply in the user's message language regardless of system-prompt language, but quality can shift subtly. **Mitigation:** if reply quality regresses for Spanish / Portuguese users after 7.3.3.F, revert the specific `role_prompts` subset back to English without touching the rest of the translation set.
