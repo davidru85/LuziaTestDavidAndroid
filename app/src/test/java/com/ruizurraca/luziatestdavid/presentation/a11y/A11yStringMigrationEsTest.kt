@@ -115,7 +115,7 @@ class A11yStringMigrationEsTest {
 
     // endregion
 
-    // region Dialog copy (mic permission + Tier-3 OK + clear-conversation)
+    // region Dialog copy (mic permission + BlockingErrorDialog OK + clear-conversation)
 
     @Test
     fun `dialog_mic_permission_title matches Spanish value`() {
@@ -200,58 +200,58 @@ class A11yStringMigrationEsTest {
 
     // endregion
 
-    // region Tier-3 AlertDialog copy
+    // region BlockingErrorDialog copy
 
     @Test
-    fun `dialog_tier3_service_unavailable_title matches Spanish value`() {
+    fun `blocking_error_dialog_service_unavailable_title matches Spanish value`() {
         assertEquals(
             "Servicio no disponible",
-            context.getString(R.string.dialog_tier3_service_unavailable_title)
+            context.getString(R.string.blocking_error_dialog_service_unavailable_title)
         )
     }
 
     @Test
-    fun `dialog_tier3_service_unavailable_body matches Spanish value`() {
+    fun `blocking_error_dialog_service_unavailable_body matches Spanish value`() {
         assertEquals(
             "Ahora mismo no podemos conectar con Luzia. Prueba de nuevo en unos instantes.",
-            context.getString(R.string.dialog_tier3_service_unavailable_body)
+            context.getString(R.string.blocking_error_dialog_service_unavailable_body)
         )
     }
 
     @Test
-    fun `dialog_tier3_internal_title matches Spanish value`() {
-        assertEquals("Algo ha fallado", context.getString(R.string.dialog_tier3_internal_title))
+    fun `blocking_error_dialog_internal_title matches Spanish value`() {
+        assertEquals("Algo ha fallado", context.getString(R.string.blocking_error_dialog_internal_title))
     }
 
     @Test
-    fun `dialog_tier3_internal_body matches Spanish value`() {
+    fun `blocking_error_dialog_internal_body matches Spanish value`() {
         assertEquals(
             "Luzia ha tenido un error inesperado. Puedes intentar enviar el mensaje otra vez.",
-            context.getString(R.string.dialog_tier3_internal_body)
+            context.getString(R.string.blocking_error_dialog_internal_body)
         )
     }
 
     @Test
-    fun `dialog_tier3_unexpected_title matches Spanish value`() {
-        assertEquals("Error inesperado", context.getString(R.string.dialog_tier3_unexpected_title))
+    fun `blocking_error_dialog_unexpected_title matches Spanish value`() {
+        assertEquals("Error inesperado", context.getString(R.string.blocking_error_dialog_unexpected_title))
     }
 
     @Test
-    fun `dialog_tier3_unexpected_body matches Spanish value`() {
+    fun `blocking_error_dialog_unexpected_body matches Spanish value`() {
         assertEquals(
             "Ha pasado algo que no esperábamos. Vuelve a intentarlo — si sigue ocurriendo, avísanos.",
-            context.getString(R.string.dialog_tier3_unexpected_body)
+            context.getString(R.string.blocking_error_dialog_unexpected_body)
         )
     }
 
     @Test
-    fun `dialog_tier3_show_details matches Spanish value`() {
-        assertEquals("Mostrar detalles", context.getString(R.string.dialog_tier3_show_details))
+    fun `blocking_error_dialog_show_details matches Spanish value`() {
+        assertEquals("Mostrar detalles", context.getString(R.string.blocking_error_dialog_show_details))
     }
 
     @Test
-    fun `dialog_tier3_hide_details matches Spanish value`() {
-        assertEquals("Ocultar detalles", context.getString(R.string.dialog_tier3_hide_details))
+    fun `blocking_error_dialog_hide_details matches Spanish value`() {
+        assertEquals("Ocultar detalles", context.getString(R.string.blocking_error_dialog_hide_details))
     }
 
     // endregion
@@ -275,116 +275,116 @@ class A11yStringMigrationEsTest {
 
     // endregion
 
-    // region Tier-1 Snackbar copy (Phase 7.3.3.H)
+    // region TransientSnackbar copy (Phase 7.3.3.H)
 
     @Test
-    fun `tier1_bad_request matches Spanish value`() {
-        assertEquals("La solicitud no es válida.", context.getString(R.string.tier1_bad_request))
+    fun `transient_snackbar_bad_request matches Spanish value`() {
+        assertEquals("La solicitud no es válida.", context.getString(R.string.transient_snackbar_bad_request))
     }
 
     @Test
-    fun `tier1_file_too_large matches Spanish value`() {
+    fun `transient_snackbar_file_too_large matches Spanish value`() {
         assertEquals(
             "El archivo de audio es demasiado grande.",
-            context.getString(R.string.tier1_file_too_large)
+            context.getString(R.string.transient_snackbar_file_too_large)
         )
     }
 
     @Test
-    fun `tier1_timeout matches Spanish value`() {
-        assertEquals("La solicitud ha caducado.", context.getString(R.string.tier1_timeout))
+    fun `transient_snackbar_timeout matches Spanish value`() {
+        assertEquals("La solicitud ha caducado.", context.getString(R.string.transient_snackbar_timeout))
     }
 
     @Test
-    fun `tier1_network matches Spanish value`() {
-        assertEquals("Error de conexión de red.", context.getString(R.string.tier1_network))
+    fun `transient_snackbar_network matches Spanish value`() {
+        assertEquals("Error de conexión de red.", context.getString(R.string.transient_snackbar_network))
     }
 
     @Test
-    fun `tier1_validation_error matches Spanish value`() {
+    fun `transient_snackbar_validation_error matches Spanish value`() {
         assertEquals(
             "Revisa los datos introducidos e inténtalo de nuevo.",
-            context.getString(R.string.tier1_validation_error)
+            context.getString(R.string.transient_snackbar_validation_error)
         )
     }
 
     @Test
-    fun `tier1_recorder_already_running matches Spanish value`() {
+    fun `transient_snackbar_recorder_already_running matches Spanish value`() {
         assertEquals(
             "Ya hay una grabación en curso.",
-            context.getString(R.string.tier1_recorder_already_running)
+            context.getString(R.string.transient_snackbar_recorder_already_running)
         )
     }
 
     @Test
-    fun `tier1_recorder_not_active matches Spanish value`() {
+    fun `transient_snackbar_recorder_not_active matches Spanish value`() {
         assertEquals(
             "No hay ninguna grabación activa.",
-            context.getString(R.string.tier1_recorder_not_active)
+            context.getString(R.string.transient_snackbar_recorder_not_active)
         )
     }
 
     @Test
-    fun `tier1_recorder_no_output matches Spanish value`() {
+    fun `transient_snackbar_recorder_no_output matches Spanish value`() {
         assertEquals(
             "No hay archivo de salida para la grabación.",
-            context.getString(R.string.tier1_recorder_no_output)
+            context.getString(R.string.transient_snackbar_recorder_no_output)
         )
     }
 
     @Test
-    fun `tier1_recorder_start_failed matches Spanish value`() {
+    fun `transient_snackbar_recorder_start_failed matches Spanish value`() {
         assertEquals(
             "No se ha podido iniciar la grabación. Inténtalo de nuevo.",
-            context.getString(R.string.tier1_recorder_start_failed)
+            context.getString(R.string.transient_snackbar_recorder_start_failed)
         )
     }
 
     @Test
-    fun `tier1_recorder_stop_failed matches Spanish value`() {
+    fun `transient_snackbar_recorder_stop_failed matches Spanish value`() {
         assertEquals(
             "No se ha podido detener la grabación. Inténtalo de nuevo.",
-            context.getString(R.string.tier1_recorder_stop_failed)
+            context.getString(R.string.transient_snackbar_recorder_stop_failed)
         )
     }
 
     @Test
-    fun `tier1_empty_audio_file matches Spanish value`() {
+    fun `transient_snackbar_empty_audio_file matches Spanish value`() {
         assertEquals(
             "El archivo de audio está vacío. Graba de nuevo, por favor.",
-            context.getString(R.string.tier1_empty_audio_file)
+            context.getString(R.string.transient_snackbar_empty_audio_file)
         )
     }
 
     @Test
-    fun `tier1_empty_conversation_history matches Spanish value`() {
+    fun `transient_snackbar_empty_conversation_history matches Spanish value`() {
         assertEquals(
             "Empieza una conversación primero.",
-            context.getString(R.string.tier1_empty_conversation_history)
+            context.getString(R.string.transient_snackbar_empty_conversation_history)
         )
     }
 
     @Test
-    fun `tier1_streaming_failed matches Spanish value`() {
+    fun `transient_snackbar_streaming_failed matches Spanish value`() {
         assertEquals(
             "Se ha interrumpido la transmisión de la respuesta. Inténtalo de nuevo.",
-            context.getString(R.string.tier1_streaming_failed)
+            context.getString(R.string.transient_snackbar_streaming_failed)
         )
     }
 
     @Test
-    fun `tier1_unexpected_failure matches Spanish value`() {
+    fun `transient_snackbar_unexpected_failure matches Spanish value`() {
         assertEquals(
             "Algo ha fallado. Inténtalo de nuevo.",
-            context.getString(R.string.tier1_unexpected_failure)
+            context.getString(R.string.transient_snackbar_unexpected_failure)
         )
     }
 
     @Test
-    fun `tier1_tts_unavailable matches Spanish value`() {
+    fun `transient_snackbar_tts_unavailable matches Spanish value`() {
         assertEquals(
             "La lectura en voz alta no está disponible en este dispositivo.",
-            context.getString(R.string.tier1_tts_unavailable)
+            context.getString(R.string.transient_snackbar_tts_unavailable)
         )
     }
 

@@ -38,7 +38,7 @@ import com.ruizurraca.luziatestdavid.R
  *  - an optional collapsible **Details** section that reveals a backend-
  *    verbatim message for debugging without cluttering the primary copy.
  *
- * Tier-3 error dialogs (7.3.3.C) use this with severity icon + accent +
+ * Blocking-error dialogs (Phase 7.3.3.C) use this with severity icon + accent +
  * `detailsMessage`. Mic-permission and clear-conversation confirm dialogs
  * (7.3.3.D) reuse this with icon + no details.
  */
@@ -93,7 +93,7 @@ fun LuziaAlertDialog(
 private fun CollapsibleDetails(message: String) {
     var expanded by remember { mutableStateOf(false) }
     val toggleLabel = stringResource(
-        if (expanded) R.string.dialog_tier3_hide_details else R.string.dialog_tier3_show_details
+        if (expanded) R.string.blocking_error_dialog_hide_details else R.string.blocking_error_dialog_show_details
     )
 
     Column(modifier = Modifier.fillMaxWidth()) {

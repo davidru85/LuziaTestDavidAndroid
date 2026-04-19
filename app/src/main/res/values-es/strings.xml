@@ -7,22 +7,22 @@
     <string name="label_transcribing">Transcribiendo…</string>
     <string name="label_thinking">Pensando…</string>
 
-    <!-- Tier-1 Snackbar copy (Phase 7.3.3.H) -->
-    <string name="tier1_bad_request">La solicitud no es válida.</string>
-    <string name="tier1_file_too_large">El archivo de audio es demasiado grande.</string>
-    <string name="tier1_timeout">La solicitud ha caducado.</string>
-    <string name="tier1_network">Error de conexión de red.</string>
-    <string name="tier1_validation_error">Revisa los datos introducidos e inténtalo de nuevo.</string>
-    <string name="tier1_recorder_already_running">Ya hay una grabación en curso.</string>
-    <string name="tier1_recorder_not_active">No hay ninguna grabación activa.</string>
-    <string name="tier1_recorder_no_output">No hay archivo de salida para la grabación.</string>
-    <string name="tier1_recorder_start_failed">No se ha podido iniciar la grabación. Inténtalo de nuevo.</string>
-    <string name="tier1_recorder_stop_failed">No se ha podido detener la grabación. Inténtalo de nuevo.</string>
-    <string name="tier1_empty_audio_file">El archivo de audio está vacío. Graba de nuevo, por favor.</string>
-    <string name="tier1_empty_conversation_history">Empieza una conversación primero.</string>
-    <string name="tier1_streaming_failed">Se ha interrumpido la transmisión de la respuesta. Inténtalo de nuevo.</string>
-    <string name="tier1_unexpected_failure">Algo ha fallado. Inténtalo de nuevo.</string>
-    <string name="tier1_tts_unavailable">La lectura en voz alta no está disponible en este dispositivo.</string>
+    <!-- Transient Snackbar copy (Phase 7.3.3.H) -->
+    <string name="transient_snackbar_bad_request">La solicitud no es válida.</string>
+    <string name="transient_snackbar_file_too_large">El archivo de audio es demasiado grande.</string>
+    <string name="transient_snackbar_timeout">La solicitud ha caducado.</string>
+    <string name="transient_snackbar_network">Error de conexión de red.</string>
+    <string name="transient_snackbar_validation_error">Revisa los datos introducidos e inténtalo de nuevo.</string>
+    <string name="transient_snackbar_recorder_already_running">Ya hay una grabación en curso.</string>
+    <string name="transient_snackbar_recorder_not_active">No hay ninguna grabación activa.</string>
+    <string name="transient_snackbar_recorder_no_output">No hay archivo de salida para la grabación.</string>
+    <string name="transient_snackbar_recorder_start_failed">No se ha podido iniciar la grabación. Inténtalo de nuevo.</string>
+    <string name="transient_snackbar_recorder_stop_failed">No se ha podido detener la grabación. Inténtalo de nuevo.</string>
+    <string name="transient_snackbar_empty_audio_file">El archivo de audio está vacío. Graba de nuevo, por favor.</string>
+    <string name="transient_snackbar_empty_conversation_history">Empieza una conversación primero.</string>
+    <string name="transient_snackbar_streaming_failed">Se ha interrumpido la transmisión de la respuesta. Inténtalo de nuevo.</string>
+    <string name="transient_snackbar_unexpected_failure">Algo ha fallado. Inténtalo de nuevo.</string>
+    <string name="transient_snackbar_tts_unavailable">La lectura en voz alta no está disponible en este dispositivo.</string>
 
     <string-array name="role_names">
         <item>Estudiante</item>
@@ -68,13 +68,13 @@
     <string name="bubble_failed_latest_message">Me he quedado en blanco. ¿Quieres intentarlo de nuevo?</string>
     <string name="bubble_failed_older_message">Perdona, mensaje vacío</string>
 
-    <!-- Tier-3 AlertDialog copy -->
-    <string name="dialog_tier3_service_unavailable_title">Servicio no disponible</string>
-    <string name="dialog_tier3_service_unavailable_body">Ahora mismo no podemos conectar con Luzia. Prueba de nuevo en unos instantes.</string>
-    <string name="dialog_tier3_internal_title">Algo ha fallado</string>
-    <string name="dialog_tier3_internal_body">Luzia ha tenido un error inesperado. Puedes intentar enviar el mensaje otra vez.</string>
-    <string name="dialog_tier3_unexpected_title">Error inesperado</string>
-    <string name="dialog_tier3_unexpected_body">Ha pasado algo que no esperábamos. Vuelve a intentarlo — si sigue ocurriendo, avísanos.</string>
-    <string name="dialog_tier3_show_details">Mostrar detalles</string>
-    <string name="dialog_tier3_hide_details">Ocultar detalles</string>
+    <!-- Blocking-error AlertDialog copy -->
+    <string name="blocking_error_dialog_service_unavailable_title">Servicio no disponible</string>
+    <string name="blocking_error_dialog_service_unavailable_body">Ahora mismo no podemos conectar con Luzia. Prueba de nuevo en unos instantes.</string>
+    <string name="blocking_error_dialog_internal_title">Algo ha fallado</string>
+    <string name="blocking_error_dialog_internal_body">Luzia ha tenido un error inesperado. Puedes intentar enviar el mensaje otra vez.</string>
+    <string name="blocking_error_dialog_unexpected_title">Error inesperado</string>
+    <string name="blocking_error_dialog_unexpected_body">Ha pasado algo que no esperábamos. Vuelve a intentarlo — si sigue ocurriendo, avísanos.</string>
+    <string name="blocking_error_dialog_show_details">Mostrar detalles</string>
+    <string name="blocking_error_dialog_hide_details">Ocultar detalles</string>
 </resources>

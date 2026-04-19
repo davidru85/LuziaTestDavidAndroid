@@ -116,7 +116,7 @@ class A11yStringMigrationPtTest {
 
     // endregion
 
-    // region Dialog copy (mic permission + Tier-3 OK + clear-conversation)
+    // region Dialog copy (mic permission + BlockingErrorDialog OK + clear-conversation)
 
     @Test
     fun `dialog_mic_permission_title matches Portuguese value`() {
@@ -201,58 +201,58 @@ class A11yStringMigrationPtTest {
 
     // endregion
 
-    // region Tier-3 AlertDialog copy
+    // region BlockingErrorDialog copy
 
     @Test
-    fun `dialog_tier3_service_unavailable_title matches Portuguese value`() {
+    fun `blocking_error_dialog_service_unavailable_title matches Portuguese value`() {
         assertEquals(
             "Serviço indisponível",
-            context.getString(R.string.dialog_tier3_service_unavailable_title)
+            context.getString(R.string.blocking_error_dialog_service_unavailable_title)
         )
     }
 
     @Test
-    fun `dialog_tier3_service_unavailable_body matches Portuguese value`() {
+    fun `blocking_error_dialog_service_unavailable_body matches Portuguese value`() {
         assertEquals(
             "Neste momento não conseguimos ligar à Luzia. Tenta novamente daqui a pouco.",
-            context.getString(R.string.dialog_tier3_service_unavailable_body)
+            context.getString(R.string.blocking_error_dialog_service_unavailable_body)
         )
     }
 
     @Test
-    fun `dialog_tier3_internal_title matches Portuguese value`() {
-        assertEquals("Algo correu mal", context.getString(R.string.dialog_tier3_internal_title))
+    fun `blocking_error_dialog_internal_title matches Portuguese value`() {
+        assertEquals("Algo correu mal", context.getString(R.string.blocking_error_dialog_internal_title))
     }
 
     @Test
-    fun `dialog_tier3_internal_body matches Portuguese value`() {
+    fun `blocking_error_dialog_internal_body matches Portuguese value`() {
         assertEquals(
             "A Luzia teve um erro inesperado. Podes tentar enviar a mensagem novamente.",
-            context.getString(R.string.dialog_tier3_internal_body)
+            context.getString(R.string.blocking_error_dialog_internal_body)
         )
     }
 
     @Test
-    fun `dialog_tier3_unexpected_title matches Portuguese value`() {
-        assertEquals("Erro inesperado", context.getString(R.string.dialog_tier3_unexpected_title))
+    fun `blocking_error_dialog_unexpected_title matches Portuguese value`() {
+        assertEquals("Erro inesperado", context.getString(R.string.blocking_error_dialog_unexpected_title))
     }
 
     @Test
-    fun `dialog_tier3_unexpected_body matches Portuguese value`() {
+    fun `blocking_error_dialog_unexpected_body matches Portuguese value`() {
         assertEquals(
             "Aconteceu algo que não esperávamos. Tenta novamente — se continuar a acontecer, avisa-nos.",
-            context.getString(R.string.dialog_tier3_unexpected_body)
+            context.getString(R.string.blocking_error_dialog_unexpected_body)
         )
     }
 
     @Test
-    fun `dialog_tier3_show_details matches Portuguese value`() {
-        assertEquals("Mostrar detalhes", context.getString(R.string.dialog_tier3_show_details))
+    fun `blocking_error_dialog_show_details matches Portuguese value`() {
+        assertEquals("Mostrar detalhes", context.getString(R.string.blocking_error_dialog_show_details))
     }
 
     @Test
-    fun `dialog_tier3_hide_details matches Portuguese value`() {
-        assertEquals("Ocultar detalhes", context.getString(R.string.dialog_tier3_hide_details))
+    fun `blocking_error_dialog_hide_details matches Portuguese value`() {
+        assertEquals("Ocultar detalhes", context.getString(R.string.blocking_error_dialog_hide_details))
     }
 
     // endregion
@@ -276,116 +276,116 @@ class A11yStringMigrationPtTest {
 
     // endregion
 
-    // region Tier-1 Snackbar copy (Phase 7.3.3.H)
+    // region TransientSnackbar copy (Phase 7.3.3.H)
 
     @Test
-    fun `tier1_bad_request matches Portuguese value`() {
-        assertEquals("O pedido é inválido.", context.getString(R.string.tier1_bad_request))
+    fun `transient_snackbar_bad_request matches Portuguese value`() {
+        assertEquals("O pedido é inválido.", context.getString(R.string.transient_snackbar_bad_request))
     }
 
     @Test
-    fun `tier1_file_too_large matches Portuguese value`() {
+    fun `transient_snackbar_file_too_large matches Portuguese value`() {
         assertEquals(
             "O ficheiro de áudio é demasiado grande.",
-            context.getString(R.string.tier1_file_too_large)
+            context.getString(R.string.transient_snackbar_file_too_large)
         )
     }
 
     @Test
-    fun `tier1_timeout matches Portuguese value`() {
-        assertEquals("O pedido excedeu o tempo limite.", context.getString(R.string.tier1_timeout))
+    fun `transient_snackbar_timeout matches Portuguese value`() {
+        assertEquals("O pedido excedeu o tempo limite.", context.getString(R.string.transient_snackbar_timeout))
     }
 
     @Test
-    fun `tier1_network matches Portuguese value`() {
-        assertEquals("Falha na ligação à rede.", context.getString(R.string.tier1_network))
+    fun `transient_snackbar_network matches Portuguese value`() {
+        assertEquals("Falha na ligação à rede.", context.getString(R.string.transient_snackbar_network))
     }
 
     @Test
-    fun `tier1_validation_error matches Portuguese value`() {
+    fun `transient_snackbar_validation_error matches Portuguese value`() {
         assertEquals(
             "Verifica os dados introduzidos e tenta novamente.",
-            context.getString(R.string.tier1_validation_error)
+            context.getString(R.string.transient_snackbar_validation_error)
         )
     }
 
     @Test
-    fun `tier1_recorder_already_running matches Portuguese value`() {
+    fun `transient_snackbar_recorder_already_running matches Portuguese value`() {
         assertEquals(
             "Já existe uma gravação em curso.",
-            context.getString(R.string.tier1_recorder_already_running)
+            context.getString(R.string.transient_snackbar_recorder_already_running)
         )
     }
 
     @Test
-    fun `tier1_recorder_not_active matches Portuguese value`() {
+    fun `transient_snackbar_recorder_not_active matches Portuguese value`() {
         assertEquals(
             "Não há nenhuma gravação ativa.",
-            context.getString(R.string.tier1_recorder_not_active)
+            context.getString(R.string.transient_snackbar_recorder_not_active)
         )
     }
 
     @Test
-    fun `tier1_recorder_no_output matches Portuguese value`() {
+    fun `transient_snackbar_recorder_no_output matches Portuguese value`() {
         assertEquals(
             "Não há ficheiro de saída para a gravação.",
-            context.getString(R.string.tier1_recorder_no_output)
+            context.getString(R.string.transient_snackbar_recorder_no_output)
         )
     }
 
     @Test
-    fun `tier1_recorder_start_failed matches Portuguese value`() {
+    fun `transient_snackbar_recorder_start_failed matches Portuguese value`() {
         assertEquals(
             "Não foi possível iniciar a gravação. Tenta novamente.",
-            context.getString(R.string.tier1_recorder_start_failed)
+            context.getString(R.string.transient_snackbar_recorder_start_failed)
         )
     }
 
     @Test
-    fun `tier1_recorder_stop_failed matches Portuguese value`() {
+    fun `transient_snackbar_recorder_stop_failed matches Portuguese value`() {
         assertEquals(
             "Não foi possível parar a gravação. Tenta novamente.",
-            context.getString(R.string.tier1_recorder_stop_failed)
+            context.getString(R.string.transient_snackbar_recorder_stop_failed)
         )
     }
 
     @Test
-    fun `tier1_empty_audio_file matches Portuguese value`() {
+    fun `transient_snackbar_empty_audio_file matches Portuguese value`() {
         assertEquals(
             "O ficheiro de áudio está vazio. Grava novamente, por favor.",
-            context.getString(R.string.tier1_empty_audio_file)
+            context.getString(R.string.transient_snackbar_empty_audio_file)
         )
     }
 
     @Test
-    fun `tier1_empty_conversation_history matches Portuguese value`() {
+    fun `transient_snackbar_empty_conversation_history matches Portuguese value`() {
         assertEquals(
             "Começa uma conversa primeiro.",
-            context.getString(R.string.tier1_empty_conversation_history)
+            context.getString(R.string.transient_snackbar_empty_conversation_history)
         )
     }
 
     @Test
-    fun `tier1_streaming_failed matches Portuguese value`() {
+    fun `transient_snackbar_streaming_failed matches Portuguese value`() {
         assertEquals(
             "A transmissão da resposta foi interrompida. Tenta novamente.",
-            context.getString(R.string.tier1_streaming_failed)
+            context.getString(R.string.transient_snackbar_streaming_failed)
         )
     }
 
     @Test
-    fun `tier1_unexpected_failure matches Portuguese value`() {
+    fun `transient_snackbar_unexpected_failure matches Portuguese value`() {
         assertEquals(
             "Algo correu mal. Tenta novamente.",
-            context.getString(R.string.tier1_unexpected_failure)
+            context.getString(R.string.transient_snackbar_unexpected_failure)
         )
     }
 
     @Test
-    fun `tier1_tts_unavailable matches Portuguese value`() {
+    fun `transient_snackbar_tts_unavailable matches Portuguese value`() {
         assertEquals(
             "A leitura em voz alta não está disponível neste dispositivo.",
-            context.getString(R.string.tier1_tts_unavailable)
+            context.getString(R.string.transient_snackbar_tts_unavailable)
         )
     }
 

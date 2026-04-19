@@ -176,37 +176,37 @@ fun ChatScreen(
 }
 
 private fun TransientSnackbarKind.messageRes(): Int = when (this) {
-    TransientSnackbarKind.BadRequest -> R.string.tier1_bad_request
-    TransientSnackbarKind.FileTooLarge -> R.string.tier1_file_too_large
-    TransientSnackbarKind.Timeout -> R.string.tier1_timeout
-    TransientSnackbarKind.Network -> R.string.tier1_network
-    TransientSnackbarKind.ValidationError -> R.string.tier1_validation_error
-    TransientSnackbarKind.RecorderAlreadyRunning -> R.string.tier1_recorder_already_running
-    TransientSnackbarKind.RecorderNotActive -> R.string.tier1_recorder_not_active
-    TransientSnackbarKind.RecorderNoOutputFile -> R.string.tier1_recorder_no_output
-    TransientSnackbarKind.RecorderStartFailed -> R.string.tier1_recorder_start_failed
-    TransientSnackbarKind.RecorderStopFailed -> R.string.tier1_recorder_stop_failed
-    TransientSnackbarKind.EmptyAudioFile -> R.string.tier1_empty_audio_file
-    TransientSnackbarKind.EmptyConversationHistory -> R.string.tier1_empty_conversation_history
-    TransientSnackbarKind.StreamingFailed -> R.string.tier1_streaming_failed
-    TransientSnackbarKind.UnexpectedFailure -> R.string.tier1_unexpected_failure
-    TransientSnackbarKind.TtsUnavailable -> R.string.tier1_tts_unavailable
+    TransientSnackbarKind.BadRequest -> R.string.transient_snackbar_bad_request
+    TransientSnackbarKind.FileTooLarge -> R.string.transient_snackbar_file_too_large
+    TransientSnackbarKind.Timeout -> R.string.transient_snackbar_timeout
+    TransientSnackbarKind.Network -> R.string.transient_snackbar_network
+    TransientSnackbarKind.ValidationError -> R.string.transient_snackbar_validation_error
+    TransientSnackbarKind.RecorderAlreadyRunning -> R.string.transient_snackbar_recorder_already_running
+    TransientSnackbarKind.RecorderNotActive -> R.string.transient_snackbar_recorder_not_active
+    TransientSnackbarKind.RecorderNoOutputFile -> R.string.transient_snackbar_recorder_no_output
+    TransientSnackbarKind.RecorderStartFailed -> R.string.transient_snackbar_recorder_start_failed
+    TransientSnackbarKind.RecorderStopFailed -> R.string.transient_snackbar_recorder_stop_failed
+    TransientSnackbarKind.EmptyAudioFile -> R.string.transient_snackbar_empty_audio_file
+    TransientSnackbarKind.EmptyConversationHistory -> R.string.transient_snackbar_empty_conversation_history
+    TransientSnackbarKind.StreamingFailed -> R.string.transient_snackbar_streaming_failed
+    TransientSnackbarKind.UnexpectedFailure -> R.string.transient_snackbar_unexpected_failure
+    TransientSnackbarKind.TtsUnavailable -> R.string.transient_snackbar_tts_unavailable
     // Unknown: reached when Resource.Error carried only a raw message with no
     // AppError (legacy / test fixtures). Backend message should always be
     // present on this path — the fallback is defensive.
-    TransientSnackbarKind.Unknown -> R.string.tier1_unexpected_failure
+    TransientSnackbarKind.Unknown -> R.string.transient_snackbar_unexpected_failure
 }
 
 private fun BlockingErrorDialogKind.titleRes(): Int = when (this) {
-    BlockingErrorDialogKind.ServiceUnavailable -> R.string.dialog_tier3_service_unavailable_title
-    BlockingErrorDialogKind.InternalError -> R.string.dialog_tier3_internal_title
-    BlockingErrorDialogKind.Unexpected -> R.string.dialog_tier3_unexpected_title
+    BlockingErrorDialogKind.ServiceUnavailable -> R.string.blocking_error_dialog_service_unavailable_title
+    BlockingErrorDialogKind.InternalError -> R.string.blocking_error_dialog_internal_title
+    BlockingErrorDialogKind.Unexpected -> R.string.blocking_error_dialog_unexpected_title
 }
 
 private fun BlockingErrorDialogKind.bodyRes(): Int = when (this) {
-    BlockingErrorDialogKind.ServiceUnavailable -> R.string.dialog_tier3_service_unavailable_body
-    BlockingErrorDialogKind.InternalError -> R.string.dialog_tier3_internal_body
-    BlockingErrorDialogKind.Unexpected -> R.string.dialog_tier3_unexpected_body
+    BlockingErrorDialogKind.ServiceUnavailable -> R.string.blocking_error_dialog_service_unavailable_body
+    BlockingErrorDialogKind.InternalError -> R.string.blocking_error_dialog_internal_body
+    BlockingErrorDialogKind.Unexpected -> R.string.blocking_error_dialog_unexpected_body
 }
 
 private fun BlockingErrorDialogKind.icon(): ImageVector = when (this) {
