@@ -92,7 +92,7 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
     - **7.2.A** Backend-message preservation across the six fixed-message `AppError` variants (Option B, symmetric) — shipped. `BadRequest` / `FileTooLarge` / `Timeout` / `Network` / `ServiceUnavailable` / `Internal` converted from `data object` singletons to `data class Variant(rawMessage: String = DEFAULT)`; `AppError.fromCode(code, message)` threads backend messages through verbatim on every known code. `ChatEvent.toChatEvent()` `when` branches moved to `is` patterns; `ErrorMapper` singleton refs replaced with no-arg constructors. Six test files swept (`assertSame` → `assertEquals`), plus 12 new preserved-message tests.
     - **7.2.B** Manual E2E on device confirmed: zero-byte / too-short audio surfaces an auto-dismissing Snackbar with the verbatim backend message `"Audio file is empty or too short to transcribe."` — not a Tier-3 AlertDialog, no auto-retry. All four success criteria passed.
     - Final state: **262 unit tests green**, domain + presentation purity green, `assembleStagingDebug` green.
-- [ ] 7.3 **Accessibility, Polish & UX** — larger scope split into three sub-tasks per the `phase7_polish_deferred` memo + user-surfaced UX items. Absorbs:
+- [x] 7.3 **Accessibility, Polish & UX** (parent — all four sub-tasks shipped 2026-04-18) — larger scope split into three sub-tasks per the `phase7_polish_deferred` memo + user-surfaced UX items. Absorbs:
     - 7.1.3.E (Tier-3 AlertDialog UX redesign)
     - 7.1.4 Option-B *(orphan-assistant UX rework, if we decide to do it)*
     - deferred `collectAsStateWithLifecycle` swap
@@ -202,7 +202,7 @@ All development must follow the **Test-Driven Development** cycle to ensure maxi
     - **No Room migration** — request-time field only, not persisted on messages or transcripts. `ChatMessage` / `ChatMessageEntity` unchanged.
 
 ### Phase 11: Documentation
-- [ ] **README:** Complete the professional `README.md` (Design Decisions, Tech Stack, Setup).
+- [x] **README** (2026-04-19) — `README.md` shipped as a reviewer's entry point that routes into the five core docs rather than re-exposing them. Sections: TL;DR + Phase 1–10 status, Golden Rules, Tech Stack table (versions sourced from `libs.versions.toml`), Architecture (import-guard table + threading + 3-tier error strategy with code-symbol mapping), Features Delivered (with inline phase references), Project Structure (package-level tree), Setup (4-step linear checklist covering `cp local.properties.example local.properties` + `sdk.dir` / `BASE_URL_PRODUCTION` editing + variant choice + Gradle commands), Build Variants (2 × 3 matrix with benchmark-type rationale), Testing (JUnit 5 + Robolectric split, conventions, coverage), CI/CD (workflow summary + transient-403 note), Design Decisions (Forks 1–7 index into `MEMORY.md`), Future Improvements (condensed Phase 11 backlog including user-added items: markdown rendering, streaming auto-scroll, Room migration, multilanguage, roles-from-backend, moderation), Reference Documentation (table routing into `CONTEXT.md` / `TECHNICAL_SPEC.md` / `DESIGN_SYSTEM.md` / `ROADMAP.md` / `MEMORY.md` / `AGENTS.md`).
   - Include a **"Future Improvements / Next Steps"** section covering the items below. Each is either an explicit Phase 5–10 deferral (noted inline) or a senior-level gap surfaced during the project build-out.
 
   **Visual / UX (user-surfaced)**
