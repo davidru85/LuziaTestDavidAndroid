@@ -17,7 +17,7 @@ import com.ruizurraca.luziatestdavid.presentation.model.toUiModels
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
 import com.ruizurraca.luziatestdavid.presentation.state.ProcessingKind
-import com.ruizurraca.luziatestdavid.presentation.state.Tier1Kind
+import com.ruizurraca.luziatestdavid.presentation.state.TransientSnackbarKind
 import com.ruizurraca.luziatestdavid.presentation.state.toChatEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -176,7 +176,7 @@ class ChatViewModel @Inject constructor(
      * same message stops playback; tapping a different message switches to it.
      * The [locale] is the composable's current configuration locale so the
      * system engine speaks in the user's language (Phase 10.6.D). Failures —
-     * engine init or missing voice — surface via a Tier-1 Snackbar.
+     * engine init or missing voice — surface via a transient Snackbar.
      */
     fun onTtsTap(messageId: String, text: String, locale: Locale) {
         if (_currentlySpeakingId.value == messageId) {
@@ -241,12 +241,12 @@ class ChatViewModel @Inject constructor(
      * Route a `Resource.Error` to a tier-classified [ChatEvent]. When the error
      * carries a populated [com.ruizurraca.luziatestdavid.domain.common.AppError],
      * [toChatEvent] handles resolution. Otherwise (legacy / untyped errors — e.g.
-     * test fixtures) we surface the raw message as an Unknown Tier-1 so the
-     * composable shows it verbatim.
+     * test fixtures) we surface the raw message as an Unknown transient
+     * Snackbar so the composable shows it verbatim.
      */
     private fun Resource.Error.toTieredEvent(): ChatEvent =
-        error?.toChatEvent() ?: ChatEvent.Tier1(
-            kind = Tier1Kind.Unknown,
+        error?.toChatEvent() ?: ChatEvent.TransientSnackbar(
+            kind = TransientSnackbarKind.Unknown,
             backendMessage = message.takeIf { it.isNotBlank() }
         )
 }

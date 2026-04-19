@@ -117,14 +117,14 @@ class AppErrorTest {
         val error: AppError = AppError.Network()
 
         val label: String = when (error) {
-            is AppError.BadRequest -> "tier1"
-            is AppError.FileTooLarge -> "tier1"
-            is AppError.Timeout -> "tier2"
-            is AppError.Network -> "tier2"
-            is AppError.ServiceUnavailable -> "tier3"
-            is AppError.Internal -> "tier3"
-            is AppError.ValidationError -> "tier1"
-            is AppError.Unknown -> "tier3"
+            is AppError.BadRequest -> "snackbar"
+            is AppError.FileTooLarge -> "snackbar"
+            is AppError.Timeout -> "inline"
+            is AppError.Network -> "inline"
+            is AppError.ServiceUnavailable -> "dialog"
+            is AppError.Internal -> "dialog"
+            is AppError.ValidationError -> "snackbar"
+            is AppError.Unknown -> "dialog"
             AppError.RecorderAlreadyRunning,
             AppError.RecorderNotActive,
             AppError.RecorderNoOutputFile,
@@ -134,10 +134,10 @@ class AppErrorTest {
             AppError.EmptyConversationHistory,
             AppError.StreamingFailed,
             AppError.UnexpectedFailure,
-            AppError.TtsUnavailable -> "tier1"
+            AppError.TtsUnavailable -> "snackbar"
         }
 
-        assertEquals("tier2", label)
+        assertEquals("inline", label)
     }
 
     @Test

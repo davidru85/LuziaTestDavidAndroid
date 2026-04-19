@@ -34,8 +34,8 @@ import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
 import com.ruizurraca.luziatestdavid.presentation.component.LuziaAlertDialog
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
-import com.ruizurraca.luziatestdavid.presentation.state.Tier1Kind
-import com.ruizurraca.luziatestdavid.presentation.state.Tier3Kind
+import com.ruizurraca.luziatestdavid.presentation.state.BlockingErrorDialogKind
+import com.ruizurraca.luziatestdavid.presentation.state.TransientSnackbarKind
 import com.ruizurraca.luziatestdavid.presentation.viewmodel.ChatViewModel
 
 @Composable
@@ -48,33 +48,34 @@ fun ChatScreen(
     val currentlySpeakingId by viewModel.currentlySpeakingId.collectAsStateWithLifecycle()
     val personaEntries = remember { personaCatalog.entries() }
     val snackbarHostState = remember { SnackbarHostState() }
-    var tier3Event by remember { mutableStateOf<ChatEvent.Tier3?>(null) }
+    var blockingErrorEvent by remember { mutableStateOf<ChatEvent.BlockingErrorDialog?>(null) }
 
     // Phase 10.6.D: resolve the TTS locale from the current app configuration
     // rather than `Locale.getDefault()` so it tracks in-app locale changes.
     val configuration = LocalConfiguration.current
     val ttsLocale = remember(configuration) { configuration.locales[0] }
 
-    // Pre-resolve every Tier1Kind → translated copy at composable time so the
-    // LaunchedEffect lambda can do a pure map lookup. Avoids the
+    // Pre-resolve every TransientSnackbarKind → translated copy at composable
+    // time so the LaunchedEffect lambda can do a pure map lookup. Avoids the
     // `LocalContextGetResourceValueCall` lint: Context captured inside a
     // LaunchedEffect wouldn't invalidate on locale change, whereas the map
     // rebuilds as a normal Compose recomposition would.
-    val tier1CopyByKind: Map<Tier1Kind, String> = Tier1Kind.entries.associateWith { kind ->
-        stringResource(kind.messageRes())
-    }
+    val snackbarCopyByKind: Map<TransientSnackbarKind, String> =
+        TransientSnackbarKind.entries.associateWith { kind ->
+            stringResource(kind.messageRes())
+        }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                is ChatEvent.Tier1 -> {
+                is ChatEvent.TransientSnackbar -> {
                     // Prefer backend-supplied message when present (option iii —
                     // backend copy often carries actionable specificity).
                     // Otherwise surface the translated copy for the semantic kind.
-                    val text = event.backendMessage ?: tier1CopyByKind.getValue(event.kind)
+                    val text = event.backendMessage ?: snackbarCopyByKind.getValue(event.kind)
                     snackbarHostState.showSnackbar(text)
                 }
-                is ChatEvent.Tier3 -> tier3Event = event
+                is ChatEvent.BlockingErrorDialog -> blockingErrorEvent = event
             }
         }
     }
@@ -157,16 +158,16 @@ fun ChatScreen(
         )
     }
 
-    tier3Event?.let { event ->
+    blockingErrorEvent?.let { event ->
         LuziaAlertDialog(
-            onDismissRequest = { tier3Event = null },
+            onDismissRequest = { blockingErrorEvent = null },
             title = stringResource(event.kind.titleRes()),
             body = stringResource(event.kind.bodyRes()),
             icon = event.kind.icon(),
             iconTint = MaterialTheme.colorScheme.error,
             detailsMessage = event.detailsMessage,
             confirmButton = {
-                TextButton(onClick = { tier3Event = null }) {
+                TextButton(onClick = { blockingErrorEvent = null }) {
                     Text(stringResource(R.string.dialog_ok))
                 }
             }
@@ -174,42 +175,42 @@ fun ChatScreen(
     }
 }
 
-private fun Tier1Kind.messageRes(): Int = when (this) {
-    Tier1Kind.BadRequest -> R.string.tier1_bad_request
-    Tier1Kind.FileTooLarge -> R.string.tier1_file_too_large
-    Tier1Kind.Timeout -> R.string.tier1_timeout
-    Tier1Kind.Network -> R.string.tier1_network
-    Tier1Kind.ValidationError -> R.string.tier1_validation_error
-    Tier1Kind.RecorderAlreadyRunning -> R.string.tier1_recorder_already_running
-    Tier1Kind.RecorderNotActive -> R.string.tier1_recorder_not_active
-    Tier1Kind.RecorderNoOutputFile -> R.string.tier1_recorder_no_output
-    Tier1Kind.RecorderStartFailed -> R.string.tier1_recorder_start_failed
-    Tier1Kind.RecorderStopFailed -> R.string.tier1_recorder_stop_failed
-    Tier1Kind.EmptyAudioFile -> R.string.tier1_empty_audio_file
-    Tier1Kind.EmptyConversationHistory -> R.string.tier1_empty_conversation_history
-    Tier1Kind.StreamingFailed -> R.string.tier1_streaming_failed
-    Tier1Kind.UnexpectedFailure -> R.string.tier1_unexpected_failure
-    Tier1Kind.TtsUnavailable -> R.string.tier1_tts_unavailable
+private fun TransientSnackbarKind.messageRes(): Int = when (this) {
+    TransientSnackbarKind.BadRequest -> R.string.tier1_bad_request
+    TransientSnackbarKind.FileTooLarge -> R.string.tier1_file_too_large
+    TransientSnackbarKind.Timeout -> R.string.tier1_timeout
+    TransientSnackbarKind.Network -> R.string.tier1_network
+    TransientSnackbarKind.ValidationError -> R.string.tier1_validation_error
+    TransientSnackbarKind.RecorderAlreadyRunning -> R.string.tier1_recorder_already_running
+    TransientSnackbarKind.RecorderNotActive -> R.string.tier1_recorder_not_active
+    TransientSnackbarKind.RecorderNoOutputFile -> R.string.tier1_recorder_no_output
+    TransientSnackbarKind.RecorderStartFailed -> R.string.tier1_recorder_start_failed
+    TransientSnackbarKind.RecorderStopFailed -> R.string.tier1_recorder_stop_failed
+    TransientSnackbarKind.EmptyAudioFile -> R.string.tier1_empty_audio_file
+    TransientSnackbarKind.EmptyConversationHistory -> R.string.tier1_empty_conversation_history
+    TransientSnackbarKind.StreamingFailed -> R.string.tier1_streaming_failed
+    TransientSnackbarKind.UnexpectedFailure -> R.string.tier1_unexpected_failure
+    TransientSnackbarKind.TtsUnavailable -> R.string.tier1_tts_unavailable
     // Unknown: reached when Resource.Error carried only a raw message with no
     // AppError (legacy / test fixtures). Backend message should always be
     // present on this path — the fallback is defensive.
-    Tier1Kind.Unknown -> R.string.tier1_unexpected_failure
+    TransientSnackbarKind.Unknown -> R.string.tier1_unexpected_failure
 }
 
-private fun Tier3Kind.titleRes(): Int = when (this) {
-    Tier3Kind.ServiceUnavailable -> R.string.dialog_tier3_service_unavailable_title
-    Tier3Kind.InternalError -> R.string.dialog_tier3_internal_title
-    Tier3Kind.Unexpected -> R.string.dialog_tier3_unexpected_title
+private fun BlockingErrorDialogKind.titleRes(): Int = when (this) {
+    BlockingErrorDialogKind.ServiceUnavailable -> R.string.dialog_tier3_service_unavailable_title
+    BlockingErrorDialogKind.InternalError -> R.string.dialog_tier3_internal_title
+    BlockingErrorDialogKind.Unexpected -> R.string.dialog_tier3_unexpected_title
 }
 
-private fun Tier3Kind.bodyRes(): Int = when (this) {
-    Tier3Kind.ServiceUnavailable -> R.string.dialog_tier3_service_unavailable_body
-    Tier3Kind.InternalError -> R.string.dialog_tier3_internal_body
-    Tier3Kind.Unexpected -> R.string.dialog_tier3_unexpected_body
+private fun BlockingErrorDialogKind.bodyRes(): Int = when (this) {
+    BlockingErrorDialogKind.ServiceUnavailable -> R.string.dialog_tier3_service_unavailable_body
+    BlockingErrorDialogKind.InternalError -> R.string.dialog_tier3_internal_body
+    BlockingErrorDialogKind.Unexpected -> R.string.dialog_tier3_unexpected_body
 }
 
-private fun Tier3Kind.icon(): ImageVector = when (this) {
-    Tier3Kind.ServiceUnavailable -> Icons.Filled.CloudOff
-    Tier3Kind.InternalError -> Icons.Filled.ErrorOutline
-    Tier3Kind.Unexpected -> Icons.AutoMirrored.Filled.HelpOutline
+private fun BlockingErrorDialogKind.icon(): ImageVector = when (this) {
+    BlockingErrorDialogKind.ServiceUnavailable -> Icons.Filled.CloudOff
+    BlockingErrorDialogKind.InternalError -> Icons.Filled.ErrorOutline
+    BlockingErrorDialogKind.Unexpected -> Icons.AutoMirrored.Filled.HelpOutline
 }

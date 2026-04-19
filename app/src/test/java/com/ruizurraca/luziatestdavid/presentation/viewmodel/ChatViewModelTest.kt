@@ -17,8 +17,8 @@ import com.ruizurraca.luziatestdavid.domain.usecase.TranscribeAudioUseCase
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
 import com.ruizurraca.luziatestdavid.presentation.state.ProcessingKind
-import com.ruizurraca.luziatestdavid.presentation.state.Tier1Kind
-import com.ruizurraca.luziatestdavid.presentation.state.Tier3Kind
+import com.ruizurraca.luziatestdavid.presentation.state.TransientSnackbarKind
+import com.ruizurraca.luziatestdavid.presentation.state.BlockingErrorDialogKind
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -186,11 +186,11 @@ class ChatViewModelTest {
             vm.startRecording()
             val event = awaitItem()
             assertTrue(
-                event is ChatEvent.Tier1 &&
-                    event.kind == Tier1Kind.Unknown &&
+                event is ChatEvent.TransientSnackbar &&
+                    event.kind == TransientSnackbarKind.Unknown &&
                     event.backendMessage == "mic busy"
             ) {
-                "expected legacy-path Tier1(Unknown, backendMessage='mic busy'), got $event"
+                "expected legacy-path TransientSnackbar(Unknown, backendMessage='mic busy'), got $event"
             }
         }
 
@@ -232,11 +232,11 @@ class ChatViewModelTest {
 
             val event = awaitItem()
             assertTrue(
-                event is ChatEvent.Tier1 &&
-                    event.kind == Tier1Kind.Unknown &&
+                event is ChatEvent.TransientSnackbar &&
+                    event.kind == TransientSnackbarKind.Unknown &&
                     event.backendMessage == "transcription failed"
             ) {
-                "expected legacy-path Tier1(Unknown, backendMessage='transcription failed'), got $event"
+                "expected legacy-path TransientSnackbar(Unknown, backendMessage='transcription failed'), got $event"
             }
         }
 
@@ -308,11 +308,11 @@ class ChatViewModelTest {
 
             val event = awaitItem()
             assertTrue(
-                event is ChatEvent.Tier1 &&
-                    event.kind == Tier1Kind.Unknown &&
+                event is ChatEvent.TransientSnackbar &&
+                    event.kind == TransientSnackbarKind.Unknown &&
                     event.backendMessage == "backend down"
             ) {
-                "expected legacy-path Tier1(Unknown, backendMessage='backend down'), got $event"
+                "expected legacy-path TransientSnackbar(Unknown, backendMessage='backend down'), got $event"
             }
         }
 
@@ -320,7 +320,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `stream error carrying AppError Internal emits Tier3 event with InternalError kind`() = runTest {
+    fun `stream error carrying AppError Internal emits BlockingErrorDialog event with InternalError kind`() = runTest {
         val internalError = AppError.Internal()
         every { streamAssistantReply(any()) } returns flowOf(
             Resource.Error(
@@ -336,17 +336,17 @@ class ChatViewModelTest {
             vm.onSendTap()
 
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Tier3) { "expected ChatEvent.Tier3, got $event" }
-            val tier3 = event as ChatEvent.Tier3
-            assertEquals(Tier3Kind.InternalError, tier3.kind)
-            assertEquals(internalError.message, tier3.detailsMessage)
+            assertTrue(event is ChatEvent.BlockingErrorDialog) { "expected ChatEvent.BlockingErrorDialog, got $event" }
+            val blockingError = event as ChatEvent.BlockingErrorDialog
+            assertEquals(BlockingErrorDialogKind.InternalError, blockingError.kind)
+            assertEquals(internalError.message, blockingError.detailsMessage)
         }
 
         assertTrue(vm.state.value is ChatUiState.Idle)
     }
 
     @Test
-    fun `stream error carrying AppError BadRequest emits Tier1 event with AppError message`() = runTest {
+    fun `stream error carrying AppError BadRequest emits TransientSnackbar event with AppError message`() = runTest {
         val badRequest = AppError.BadRequest()
         every { streamAssistantReply(any()) } returns flowOf(
             Resource.Error(
@@ -362,12 +362,12 @@ class ChatViewModelTest {
             vm.onSendTap()
 
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Tier1) { "expected ChatEvent.Tier1, got $event" }
-            val tier1 = event as ChatEvent.Tier1
-            assertEquals(Tier1Kind.BadRequest, tier1.kind)
+            assertTrue(event is ChatEvent.TransientSnackbar) { "expected ChatEvent.TransientSnackbar, got $event" }
+            val snackbar = event as ChatEvent.TransientSnackbar
+            assertEquals(TransientSnackbarKind.BadRequest, snackbar.kind)
             // Default BadRequest rawMessage → backendMessage is null (composable
             // resolves the translated kind copy).
-            assertNull(tier1.backendMessage)
+            assertNull(snackbar.backendMessage)
         }
     }
 
@@ -462,7 +462,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `onTtsTap emits Tier1 TtsUnavailable event when speak returns TtsUnavailable error`() = runTest {
+    fun `onTtsTap emits TransientSnackbar TtsUnavailable event when speak returns TtsUnavailable error`() = runTest {
         coEvery {
             textSpeaker.speak(any(), any())
         } returns AppError.TtsUnavailable.toResourceError()
@@ -472,9 +472,9 @@ class ChatViewModelTest {
             vm.onTtsTap(messageId = "a1", text = "Hello", locale = englishLocale)
             val event = awaitItem()
             assertTrue(
-                event is ChatEvent.Tier1 && event.kind == Tier1Kind.TtsUnavailable
+                event is ChatEvent.TransientSnackbar && event.kind == TransientSnackbarKind.TtsUnavailable
             ) {
-                "expected Tier1(TtsUnavailable), got $event"
+                "expected TransientSnackbar(TtsUnavailable), got $event"
             }
         }
         assertNull(vm.currentlySpeakingId.value)

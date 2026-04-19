@@ -4,29 +4,30 @@ import com.ruizurraca.luziatestdavid.domain.common.AppError
 
 sealed interface ChatEvent {
     /**
-     * Non-blocking severity event rendered as a Tier-1 Snackbar.
-     * Carries a semantic [Tier1Kind] that the composable resolves to translated
+     * Non-blocking severity event rendered as a transient Snackbar. Carries a
+     * semantic [TransientSnackbarKind] that the composable resolves to translated
      * copy via stringResource. If `backendMessage` is non-null, it preempts the
      * resolved copy (option iii: backend-supplied message wins when present).
      */
-    data class Tier1(
-        val kind: Tier1Kind,
+    data class TransientSnackbar(
+        val kind: TransientSnackbarKind,
         val backendMessage: String? = null
     ) : ChatEvent
 
     /**
-     * Critical-severity one-shot event that materialises as a Tier-3 AlertDialog.
-     * Carries a semantic [Tier3Kind] and an optional backend-verbatim
-     * `detailsMessage` for the dialog's collapsible Details section.
+     * Critical-severity one-shot event that materialises as a blocking
+     * AlertDialog. Carries a semantic [BlockingErrorDialogKind] and an optional
+     * backend-verbatim `detailsMessage` for the dialog's collapsible Details
+     * section.
      */
-    data class Tier3(
-        val kind: Tier3Kind,
+    data class BlockingErrorDialog(
+        val kind: BlockingErrorDialogKind,
         val detailsMessage: String? = null
     ) : ChatEvent
 }
 
-enum class Tier1Kind {
-    // Backend-facing (AppError variants that reach Tier 1)
+enum class TransientSnackbarKind {
+    // Backend-facing (AppError variants that reach the transient-snackbar channel)
     BadRequest,
     FileTooLarge,
     Timeout,
@@ -50,58 +51,59 @@ enum class Tier1Kind {
     Unknown
 }
 
-enum class Tier3Kind {
+enum class BlockingErrorDialogKind {
     ServiceUnavailable,
     InternalError,
     Unexpected
 }
 
 fun AppError.toChatEvent(): ChatEvent = when (this) {
-    // Backend-facing Tier-1: backend message (rawMessage when user provided it)
-    // passes through so the composable can prefer it over the translated copy.
-    is AppError.BadRequest -> ChatEvent.Tier1(
-        kind = Tier1Kind.BadRequest,
+    // Backend-facing snackbar variants: backend message (rawMessage when user
+    // provided it) passes through so the composable can prefer it over the
+    // translated copy.
+    is AppError.BadRequest -> ChatEvent.TransientSnackbar(
+        kind = TransientSnackbarKind.BadRequest,
         backendMessage = backendMessageOrNull(rawMessage, default = AppError.BadRequest().rawMessage)
     )
-    is AppError.FileTooLarge -> ChatEvent.Tier1(
-        kind = Tier1Kind.FileTooLarge,
+    is AppError.FileTooLarge -> ChatEvent.TransientSnackbar(
+        kind = TransientSnackbarKind.FileTooLarge,
         backendMessage = backendMessageOrNull(rawMessage, default = AppError.FileTooLarge().rawMessage)
     )
-    is AppError.Timeout -> ChatEvent.Tier1(
-        kind = Tier1Kind.Timeout,
+    is AppError.Timeout -> ChatEvent.TransientSnackbar(
+        kind = TransientSnackbarKind.Timeout,
         backendMessage = backendMessageOrNull(rawMessage, default = AppError.Timeout().rawMessage)
     )
-    is AppError.Network -> ChatEvent.Tier1(
-        kind = Tier1Kind.Network,
+    is AppError.Network -> ChatEvent.TransientSnackbar(
+        kind = TransientSnackbarKind.Network,
         backendMessage = backendMessageOrNull(rawMessage, default = AppError.Network().rawMessage)
     )
-    is AppError.ValidationError -> ChatEvent.Tier1(
-        kind = Tier1Kind.ValidationError,
+    is AppError.ValidationError -> ChatEvent.TransientSnackbar(
+        kind = TransientSnackbarKind.ValidationError,
         backendMessage = rawMessage  // ValidationError has no default — always backend-supplied.
     )
 
     // Local variants: never carry a backend message (client-originated).
-    AppError.RecorderAlreadyRunning -> ChatEvent.Tier1(kind = Tier1Kind.RecorderAlreadyRunning)
-    AppError.RecorderNotActive -> ChatEvent.Tier1(kind = Tier1Kind.RecorderNotActive)
-    AppError.RecorderNoOutputFile -> ChatEvent.Tier1(kind = Tier1Kind.RecorderNoOutputFile)
-    AppError.RecorderStartFailed -> ChatEvent.Tier1(kind = Tier1Kind.RecorderStartFailed)
-    AppError.RecorderStopFailed -> ChatEvent.Tier1(kind = Tier1Kind.RecorderStopFailed)
-    AppError.EmptyAudioFile -> ChatEvent.Tier1(kind = Tier1Kind.EmptyAudioFile)
-    AppError.EmptyConversationHistory -> ChatEvent.Tier1(kind = Tier1Kind.EmptyConversationHistory)
-    AppError.StreamingFailed -> ChatEvent.Tier1(kind = Tier1Kind.StreamingFailed)
-    AppError.UnexpectedFailure -> ChatEvent.Tier1(kind = Tier1Kind.UnexpectedFailure)
-    AppError.TtsUnavailable -> ChatEvent.Tier1(kind = Tier1Kind.TtsUnavailable)
+    AppError.RecorderAlreadyRunning -> ChatEvent.TransientSnackbar(kind = TransientSnackbarKind.RecorderAlreadyRunning)
+    AppError.RecorderNotActive -> ChatEvent.TransientSnackbar(kind = TransientSnackbarKind.RecorderNotActive)
+    AppError.RecorderNoOutputFile -> ChatEvent.TransientSnackbar(kind = TransientSnackbarKind.RecorderNoOutputFile)
+    AppError.RecorderStartFailed -> ChatEvent.TransientSnackbar(kind = TransientSnackbarKind.RecorderStartFailed)
+    AppError.RecorderStopFailed -> ChatEvent.TransientSnackbar(kind = TransientSnackbarKind.RecorderStopFailed)
+    AppError.EmptyAudioFile -> ChatEvent.TransientSnackbar(kind = TransientSnackbarKind.EmptyAudioFile)
+    AppError.EmptyConversationHistory -> ChatEvent.TransientSnackbar(kind = TransientSnackbarKind.EmptyConversationHistory)
+    AppError.StreamingFailed -> ChatEvent.TransientSnackbar(kind = TransientSnackbarKind.StreamingFailed)
+    AppError.UnexpectedFailure -> ChatEvent.TransientSnackbar(kind = TransientSnackbarKind.UnexpectedFailure)
+    AppError.TtsUnavailable -> ChatEvent.TransientSnackbar(kind = TransientSnackbarKind.TtsUnavailable)
 
-    is AppError.ServiceUnavailable -> ChatEvent.Tier3(
-        kind = Tier3Kind.ServiceUnavailable,
+    is AppError.ServiceUnavailable -> ChatEvent.BlockingErrorDialog(
+        kind = BlockingErrorDialogKind.ServiceUnavailable,
         detailsMessage = message
     )
-    is AppError.Internal -> ChatEvent.Tier3(
-        kind = Tier3Kind.InternalError,
+    is AppError.Internal -> ChatEvent.BlockingErrorDialog(
+        kind = BlockingErrorDialogKind.InternalError,
         detailsMessage = message
     )
-    is AppError.Unknown -> ChatEvent.Tier3(
-        kind = Tier3Kind.Unexpected,
+    is AppError.Unknown -> ChatEvent.BlockingErrorDialog(
+        kind = BlockingErrorDialogKind.Unexpected,
         detailsMessage = message
     )
 }
