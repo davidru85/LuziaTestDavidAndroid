@@ -31,7 +31,7 @@ class ChatRepositoryImpl @Inject constructor(
     private val chatMapper: ChatMapper,
     private val errorMapper: ErrorMapper,
     private val dao: ChatMessageDao,
-    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ChatRepository {
 
     override suspend fun transcribeAudio(audio: File): Resource<String> =
