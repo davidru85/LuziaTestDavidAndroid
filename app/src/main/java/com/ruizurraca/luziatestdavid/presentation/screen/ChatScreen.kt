@@ -180,6 +180,7 @@ private fun Tier1Kind.messageRes(): Int = when (this) {
     Tier1Kind.EmptyConversationHistory -> R.string.tier1_empty_conversation_history
     Tier1Kind.StreamingFailed -> R.string.tier1_streaming_failed
     Tier1Kind.UnexpectedFailure -> R.string.tier1_unexpected_failure
+    Tier1Kind.TtsUnavailable -> R.string.tier1_tts_unavailable
     // Unknown: reached when Resource.Error carried only a raw message with no
     // AppError (legacy / test fixtures). Backend message should always be
     // present on this path — the fallback is defensive.

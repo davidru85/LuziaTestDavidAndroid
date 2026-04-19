@@ -22,6 +22,7 @@
     <string name="tier1_empty_conversation_history">Empieza una conversación primero.</string>
     <string name="tier1_streaming_failed">Se ha interrumpido la transmisión de la respuesta. Inténtalo de nuevo.</string>
     <string name="tier1_unexpected_failure">Algo ha fallado. Inténtalo de nuevo.</string>
+    <string name="tier1_tts_unavailable">La lectura en voz alta no está disponible en este dispositivo.</string>
 
     <string-array name="role_names">
         <item>Estudiante</item>

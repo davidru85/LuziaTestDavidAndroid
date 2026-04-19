@@ -67,6 +67,7 @@
     <string name="tier1_empty_conversation_history">Start a conversation first.</string>
     <string name="tier1_streaming_failed">The reply stream was interrupted. Please try again.</string>
     <string name="tier1_unexpected_failure">Something went wrong. Please try again.</string>
+    <string name="tier1_tts_unavailable">Read aloud isn\'t available on this device.</string>
 
     <!-- Tier-3 AlertDialog copy (Phase 7.3.3.C) -->
     <string name="dialog_tier3_service_unavailable_title">Service unavailable</string>

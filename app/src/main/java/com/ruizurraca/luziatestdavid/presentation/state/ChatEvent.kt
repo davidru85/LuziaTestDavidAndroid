@@ -43,6 +43,7 @@ enum class Tier1Kind {
     EmptyConversationHistory,
     StreamingFailed,
     UnexpectedFailure,
+    TtsUnavailable,
 
     // Legacy/unknown — no AppError attached on the source Resource.Error. The
     // composable falls back to `backendMessage` verbatim when resolving this kind.
@@ -89,6 +90,7 @@ fun AppError.toChatEvent(): ChatEvent = when (this) {
     AppError.EmptyConversationHistory -> ChatEvent.Tier1(kind = Tier1Kind.EmptyConversationHistory)
     AppError.StreamingFailed -> ChatEvent.Tier1(kind = Tier1Kind.StreamingFailed)
     AppError.UnexpectedFailure -> ChatEvent.Tier1(kind = Tier1Kind.UnexpectedFailure)
+    AppError.TtsUnavailable -> ChatEvent.Tier1(kind = Tier1Kind.TtsUnavailable)
 
     is AppError.ServiceUnavailable -> ChatEvent.Tier3(
         kind = Tier3Kind.ServiceUnavailable,
