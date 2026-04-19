@@ -8,7 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -27,7 +27,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ruizurraca.luziatestdavid.R
 import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
 import com.ruizurraca.luziatestdavid.presentation.component.LuziaAlertDialog
@@ -201,5 +201,5 @@ private fun Tier3Kind.bodyRes(): Int = when (this) {
 private fun Tier3Kind.icon(): ImageVector = when (this) {
     Tier3Kind.ServiceUnavailable -> Icons.Filled.CloudOff
     Tier3Kind.InternalError -> Icons.Filled.ErrorOutline
-    Tier3Kind.Unexpected -> Icons.Filled.HelpOutline
+    Tier3Kind.Unexpected -> Icons.AutoMirrored.Filled.HelpOutline
 }
