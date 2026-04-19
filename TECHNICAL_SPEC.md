@@ -22,7 +22,9 @@ To maintain testability and separation of concerns, the following rules must be 
 
 ### 1. POST `/transcribe` (Audio to Text)
 *   **Content-Type:** `multipart/form-data`
-*   **Payload:** Field `audio` (Binary, `.m4a` format, AAC encoder).
+*   **Payload:**
+    *   **`audio`** *(binary, required)* — `.m4a` format, AAC encoder.
+    *   **`lang`** *(string, optional)* — ISO 639-1 language code (e.g. `"en"`, `"es"`, `"pt"`, `"fr"`) resolved from the Android device's current locale at send time, following the same rule documented in [§API Contracts #2](#2-post-chat-llm-streaming) (`context.resources.configuration.locales[0].language` via `LocaleProvider`, passthrough with no whitelist, omit-on-null/empty). Forwarded by the backend to Whisper's native `language` parameter when present (improves transcription accuracy on non-English audio); omitted → Whisper auto-detects from the waveform. Not persisted client-side — request-time only.
 *   **Success Response:**
     ```json
     { "text": "transcribed text" }
@@ -46,10 +48,11 @@ To maintain testability and separation of concerns, the following rules must be 
 
 ### 2. POST `/chat` (LLM Streaming)
 *   **Content-Type:** `application/json`
-*   **Request Body:** The `messages` array carries the full conversation history. Each message has **three fields**:
+*   **Request Body:** The `messages` array carries the full conversation history. Each message has **four fields**:
     *   **`role`** *(string, required)* — enum identifying the author of the message, following standard LLM conventions. Allowed values: `"user"`, `"assistant"`, `"system"`.
     *   **`role_prompt`** *(string, required on `"user"` turns; optional-but-ignored on `"assistant"` / `"system"` turns)* — the persona prompt (from `role_prompts`) that was active when the user sent the message. On user turns the backend reads it to steer the reply (see server-side semantics below). On non-user turns the backend silently drops it, so sending or omitting is equivalent; the Android client **omits it** for payload minimality.
     *   **`content`** *(string, required)* — the textual content of the message.
+    *   **`lang`** *(string, optional on every message)* — ISO 639-1 language code (e.g. `"en"`, `"es"`, `"pt"`, `"fr"`, `"ja"`) resolved from the Android device's current locale at send time. The client reads `context.resources.configuration.locales[0].language` via a Hilt-provided `LocaleProvider` (domain interface, Android impl in data) — **no client-side normalization or whitelist**: whatever language the OS reports ships verbatim so the backend can serve replies in the user's preferred language regardless of which locales the app itself translates (currently `values/` en, `values-es/`, `values-pt/`). If `locales[0].language` returns null or empty — an extreme edge case — the client **omits the field** rather than guessing, and the backend falls back to its own language detection. Not persisted in Room — request-time only, resolved at DTO construction from the current device locale, applied uniformly to every message in the outgoing payload when resolvable (historical messages in the conversation are re-tagged with the current send-time locale, not their original one, since no per-message locale history is retained).
 *   **Per-message persona capture semantics** (preserved from prior contract, moved from `role` to `role_prompt`):
     *   When a user message is created, the persona prompt active at that moment is captured and persisted as `role_prompt`.
     *   Changing the persona mid-conversation affects only **subsequent** user messages; historical user messages retain the `role_prompt` active when they were sent.
@@ -80,7 +83,9 @@ To maintain testability and separation of concerns, the following rules must be 
     | Missing field / wrong type (fallback)                | `Each message must have 'role' and 'content' fields.`              |
 
     All 422 responses share `code: "VALIDATION_ERROR"` and the standard `{"error":{"code":"...","message":"..."}}` envelope (`§3 Global Error Schema`).
-*   **Backwards compatibility:** **none.** The client and backend cut over to the three-field schema in the same release. Mixed / two-field payloads will 422.
+
+    **`lang` validation — pending backend API_SPEC revision.** `lang` is optional, so a message without `lang` is wire-valid. Malformed values (non-string, non-ISO-639-1-shaped) may produce a `VALIDATION_ERROR` 422 response depending on backend strictness; the verbatim `message` string is owned by the backend and will be pinned byte-for-byte in this section once the backend ships its API_SPEC revision covering the optional `lang` field. See [docs/backend-coordination/](docs/backend-coordination/) for the Android-side change proposal driving that revision.
+*   **Backwards compatibility:** `lang` is **additive and optional** — payloads without `lang` remain wire-valid, so the client can adopt the field independently once the backend accepts it. No atomic cutover required. Pre-launch stance — no user data, no migration concern.
 *   **Example** (first user turn in "Student" mode, assistant reply, second user turn in "Artist" mode):
     ```json
     {
@@ -88,16 +93,19 @@ To maintain testability and separation of concerns, the following rules must be 
         {
           "role": "user",
           "role_prompt": "You are a patient, educational tutor. Explain concepts step by step and encourage learning.",
-          "content": "¿Cómo funciona la fotosíntesis?"
+          "content": "¿Cómo funciona la fotosíntesis?",
+          "lang": "es"
         },
         {
           "role": "assistant",
-          "content": "La fotosíntesis es el proceso…"
+          "content": "La fotosíntesis es el proceso…",
+          "lang": "es"
         },
         {
           "role": "user",
           "role_prompt": "You are a creative artist. Think imaginatively, brainstorm ideas, and inspire creativity.",
-          "content": "Ahora escríbelo como un poema"
+          "content": "Ahora escríbelo como un poema",
+          "lang": "es"
         }
       ]
     }
