@@ -24,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
@@ -44,9 +45,15 @@ fun ChatScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val selectedPersona by viewModel.selectedPersona.collectAsStateWithLifecycle()
+    val currentlySpeakingId by viewModel.currentlySpeakingId.collectAsStateWithLifecycle()
     val personaEntries = remember { personaCatalog.entries() }
     val snackbarHostState = remember { SnackbarHostState() }
     var tier3Event by remember { mutableStateOf<ChatEvent.Tier3?>(null) }
+
+    // Phase 10.6.D: resolve the TTS locale from the current app configuration
+    // rather than `Locale.getDefault()` so it tracks in-app locale changes.
+    val configuration = LocalConfiguration.current
+    val ttsLocale = remember(configuration) { configuration.locales[0] }
 
     // Pre-resolve every Tier1Kind → translated copy at composable time so the
     // LaunchedEffect lambda can do a pure map lookup. Avoids the
@@ -116,13 +123,15 @@ fun ChatScreen(
         selectedPersona = selectedPersona,
         personaEntries = personaEntries,
         isRecording = isRecording,
+        currentlySpeakingId = currentlySpeakingId,
         snackbarHostState = snackbarHostState,
         onDraftChange = viewModel::onDraftChange,
         onMicTap = onMicTap,
         onSendTap = viewModel::onSendTap,
         onPersonaSelected = viewModel::onPersonaSelected,
         onRetryLastFailure = viewModel::onRetryLastFailure,
-        onConfirmClearConversation = viewModel::onClearConversation
+        onConfirmClearConversation = viewModel::onClearConversation,
+        onTtsTap = { id, text -> viewModel.onTtsTap(id, text, ttsLocale) }
     )
 
     if (showRationale) {

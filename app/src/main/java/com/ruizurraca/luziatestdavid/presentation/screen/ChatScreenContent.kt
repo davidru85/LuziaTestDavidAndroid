@@ -29,6 +29,7 @@ import com.ruizurraca.luziatestdavid.presentation.component.ChatInputBar
 import com.ruizurraca.luziatestdavid.presentation.component.ChatTopAppBar
 import com.ruizurraca.luziatestdavid.presentation.component.RetryAssistantReplyButton
 import com.ruizurraca.luziatestdavid.presentation.component.RoleSelectorChips
+import com.ruizurraca.luziatestdavid.presentation.component.TtsPlayButton
 import com.ruizurraca.luziatestdavid.presentation.component.UserMessageBubble
 import com.ruizurraca.luziatestdavid.presentation.model.AssistantStreamState
 import com.ruizurraca.luziatestdavid.presentation.model.ChatMessageUiModel
@@ -42,6 +43,7 @@ fun ChatScreenContent(
     selectedPersona: Persona,
     personaEntries: List<PersonaEntry>,
     isRecording: Boolean,
+    currentlySpeakingId: String?,
     snackbarHostState: SnackbarHostState,
     onDraftChange: (String) -> Unit,
     onMicTap: () -> Unit,
@@ -49,12 +51,20 @@ fun ChatScreenContent(
     onPersonaSelected: (Persona) -> Unit,
     onRetryLastFailure: () -> Unit,
     onConfirmClearConversation: () -> Unit,
+    onTtsTap: (messageId: String, text: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val lastFailedAssistantId = remember(state.messages) {
         state.messages.lastOrNull {
             it is ChatMessageUiModel.Assistant && it.streamState == AssistantStreamState.FAILED
         }?.id
+    }
+
+    // Phase 10.6.D: the TTS button is rendered only beneath the LAST assistant
+    // row, and only when its state is RECEIVED. Holding the id of the last
+    // assistant lets the item renderer keep its equality check cheap.
+    val lastAssistantId = remember(state.messages) {
+        state.messages.lastOrNull { it is ChatMessageUiModel.Assistant }?.id
     }
 
     // Phase 10.6.B (fixed): keep the viewport locked to the newest message.
@@ -135,6 +145,10 @@ fun ChatScreenContent(
                         // `lastFailedAssistantId` equality implies streamState
                         // == FAILED by construction.
                         val isRetryable = message.id == lastFailedAssistantId
+                        // Phase 10.6.D: TTS affordance under the latest assistant
+                        // row only, gated on streamState == RECEIVED.
+                        val showTtsButton = message.id == lastAssistantId &&
+                            message.streamState == AssistantStreamState.RECEIVED
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             AssistantMessageBubble(
                                 model = message,
@@ -142,6 +156,12 @@ fun ChatScreenContent(
                             )
                             if (isRetryable) {
                                 RetryAssistantReplyButton(onClick = onRetryLastFailure)
+                            }
+                            if (showTtsButton) {
+                                TtsPlayButton(
+                                    isSpeaking = currentlySpeakingId == message.id,
+                                    onClick = { onTtsTap(message.id, message.content) }
+                                )
                             }
                         }
                     }
@@ -174,13 +194,15 @@ private fun ChatScreenContentPreview_IdleEmpty() {
             selectedPersona = Persona.STUDENT,
             personaEntries = previewPersonaEntries(),
             isRecording = false,
+            currentlySpeakingId = null,
             snackbarHostState = remember { SnackbarHostState() },
             onDraftChange = {},
             onMicTap = {},
             onSendTap = {},
             onPersonaSelected = {},
             onRetryLastFailure = {},
-            onConfirmClearConversation = {}
+            onConfirmClearConversation = {},
+            onTtsTap = { _, _ -> }
         )
     }
 }
@@ -209,13 +231,15 @@ private fun ChatScreenContentPreview_Conversation() {
             selectedPersona = Persona.STUDENT,
             personaEntries = previewPersonaEntries(),
             isRecording = false,
+            currentlySpeakingId = null,
             snackbarHostState = remember { SnackbarHostState() },
             onDraftChange = {},
             onMicTap = {},
             onSendTap = {},
             onPersonaSelected = {},
             onRetryLastFailure = {},
-            onConfirmClearConversation = {}
+            onConfirmClearConversation = {},
+            onTtsTap = { _, _ -> }
         )
     }
 }
@@ -244,13 +268,15 @@ private fun ChatScreenContentPreview_DarkThinking() {
             selectedPersona = Persona.STUDENT,
             personaEntries = previewPersonaEntries(),
             isRecording = false,
+            currentlySpeakingId = null,
             snackbarHostState = remember { SnackbarHostState() },
             onDraftChange = {},
             onMicTap = {},
             onSendTap = {},
             onPersonaSelected = {},
             onRetryLastFailure = {},
-            onConfirmClearConversation = {}
+            onConfirmClearConversation = {},
+            onTtsTap = { _, _ -> }
         )
     }
 }
