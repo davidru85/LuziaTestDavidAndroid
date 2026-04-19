@@ -138,11 +138,13 @@ All threading must be handled in the **Repository/DataSource** layer using `flow
 ## ⚠️ Error Handling Strategy (3-Tier System)
 Errors must be mapped to a `sealed class AppError` in the domain layer.
 
-| Tier | Mechanism | Triggering Condition | UI Implementation |
-| :--- | :--- | :--- | :--- |
-| **Tier 1** | `Snackbar` | Validation/Format errors (`VALIDATION_ERROR`, `BAD_REQUEST`, `FILE_TOO_LARGE`) | Auto-dismissing, non-blocking. |
-| **Tier 2** | `Inline Bubble` | Connectivity/Network errors (`TIMEOUT`, `NETWORK_ERROR`) | Error icon in the message bubble + **Retry Button**. |
-| **Tier 3** | `AlertDialog` | Critical/Server errors (`INTERNAL_ERROR`, `SERVICE_UNAVAILABLE`) | Modal, requires user dismissal. |
+| Tier | Code symbol | Mechanism | Triggering Condition | UI Implementation |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tier 1** | `ChatEvent.TransientSnackbar` | `Snackbar` | Validation/Format errors (`VALIDATION_ERROR`, `BAD_REQUEST`, `FILE_TOO_LARGE`) | Auto-dismissing, non-blocking. |
+| **Tier 2** | *(none — rides on `MessageStatus.FAILED`)* | `Inline Bubble` | Connectivity/Network errors (`TIMEOUT`, `NETWORK_ERROR`) | Error icon in the message bubble + **Retry Button**. |
+| **Tier 3** | `ChatEvent.BlockingErrorDialog` | `AlertDialog` | Critical/Server errors (`INTERNAL_ERROR`, `SERVICE_UNAVAILABLE`) | Modal, requires user dismissal. |
+
+The "3-Tier" concept is preserved here as a design-pattern label. In code the delivery channels are named by intent: `TransientSnackbar` (+`TransientSnackbarKind`) and `BlockingErrorDialog` (+`BlockingErrorDialogKind`). Renamed in Phase 10.6.G — the spec-level tier numbers stayed as a mental model but code identifiers now express responsibility.
 
 ### The `Resource<T>` Pattern
 All repository methods must return a `Resource` wrapper:
