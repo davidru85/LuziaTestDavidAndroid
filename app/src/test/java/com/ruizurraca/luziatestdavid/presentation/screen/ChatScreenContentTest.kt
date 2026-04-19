@@ -201,6 +201,23 @@ class ChatScreenContentTest {
         assertEquals(1, retries)
     }
 
+    // ----- Phase 10.6.B — bottom-anchored message list --------------------
+
+    @Test
+    fun manyMessages_latestVisibleAtBottom_oldestNotComposed() {
+        // With 50 messages that exceed viewport height, bottom-anchored layout
+        // (reverseLayout=true) should render the latest message in the viewport
+        // and leave the oldest scrolled off-screen — i.e. not composed by the
+        // LazyColumn at all. Under top-anchored layout, the opposite holds.
+        val messages = (1..50).map { i ->
+            userMsg(id = "u$i", content = "message $i")
+        }
+        setContent(state = ChatUiState.Idle(messages = messages))
+
+        composeTestRule.onNodeWithText("message 50").assertIsDisplayed()
+        composeTestRule.onNodeWithText("message 1").assertDoesNotExist()
+    }
+
     @Test
     fun olderFailedAssistant_doesNotRenderRetryButton() {
         // Only the LAST failed assistant is retryable — older failures below it
