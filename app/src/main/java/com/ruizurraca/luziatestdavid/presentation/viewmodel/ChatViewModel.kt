@@ -3,6 +3,7 @@ package com.ruizurraca.luziatestdavid.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ruizurraca.luziatestdavid.domain.audio.AudioRecorder
+import com.ruizurraca.luziatestdavid.domain.audio.TextSpeaker
 import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
@@ -29,7 +30,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -39,7 +42,8 @@ class ChatViewModel @Inject constructor(
     private val transcribeAudio: TranscribeAudioUseCase,
     private val streamAssistantReply: StreamAssistantReplyUseCase,
     private val repository: ChatRepository,
-    private val personaCatalog: PersonaCatalog
+    private val personaCatalog: PersonaCatalog,
+    private val textSpeaker: TextSpeaker
 ) : ViewModel() {
 
     private sealed interface Phase {
@@ -55,6 +59,11 @@ class ChatViewModel @Inject constructor(
 
     private val _selectedPersona = MutableStateFlow(Persona.STUDENT)
     val selectedPersona: StateFlow<Persona> = _selectedPersona.asStateFlow()
+
+    private val _currentlySpeakingId = MutableStateFlow<String?>(null)
+    val currentlySpeakingId: StateFlow<String?> = _currentlySpeakingId.asStateFlow()
+
+    private var speakJob: Job? = null
 
     private val _events = MutableSharedFlow<ChatEvent>(extraBufferCapacity = 8)
     val events: SharedFlow<ChatEvent> = _events.asSharedFlow()
@@ -162,6 +171,38 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Toggles TTS playback for the given assistant [messageId]. Tapping the
+     * same message stops playback; tapping a different message switches to it.
+     * The [locale] is the composable's current configuration locale so the
+     * system engine speaks in the user's language (Phase 10.6.D). Failures —
+     * engine init or missing voice — surface via a Tier-1 Snackbar.
+     */
+    fun onTtsTap(messageId: String, text: String, locale: Locale) {
+        if (_currentlySpeakingId.value == messageId) {
+            cancelActivePlayback()
+            return
+        }
+        cancelActivePlayback()
+        _currentlySpeakingId.value = messageId
+        speakJob = viewModelScope.launch {
+            when (val result = textSpeaker.speak(text, locale)) {
+                is Resource.Success -> Unit
+                is Resource.Error -> _events.tryEmit(result.toTieredEvent())
+            }
+            if (_currentlySpeakingId.value == messageId) {
+                _currentlySpeakingId.value = null
+            }
+        }
+    }
+
+    private fun cancelActivePlayback() {
+        speakJob?.cancel()
+        speakJob = null
+        textSpeaker.stop()
+        _currentlySpeakingId.value = null
+    }
+
     fun onClearConversation() {
         viewModelScope.launch {
             repository.clearConversation()
@@ -176,6 +217,7 @@ class ChatViewModel @Inject constructor(
      */
     public override fun onCleared() {
         audioRecorder.release()
+        textSpeaker.release()
         super.onCleared()
     }
 
