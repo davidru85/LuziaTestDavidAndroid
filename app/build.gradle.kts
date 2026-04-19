@@ -85,6 +85,10 @@ android {
             it.useJUnitPlatform()
         }
     }
+
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
 }
 
 kotlin {
