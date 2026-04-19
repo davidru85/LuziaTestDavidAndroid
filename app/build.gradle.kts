@@ -94,6 +94,11 @@ android {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.useJUnitPlatform()
+            // Intentionally NOT setting maxParallelForks — measured on 2026-04-19
+            // with 6 forks (half of 12 cores), wall-clock regressed 29 s → 48 s.
+            // Fork-JVM startup (~3-5 s × 6) + Robolectric per-fork shadow-classloader
+            // init exceed the parallelism gain at a 442-test / ~29 s suite size.
+            // Revisit when serial runtime exceeds ~2-3 min. ROADMAP 10.5.B.
         }
     }
 
