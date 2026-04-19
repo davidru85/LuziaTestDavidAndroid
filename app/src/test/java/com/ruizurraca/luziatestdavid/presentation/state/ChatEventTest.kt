@@ -60,6 +60,7 @@ class ChatEventTest {
             Tier1Kind.EmptyConversationHistory,
             Tier1Kind.StreamingFailed,
             Tier1Kind.UnexpectedFailure,
+            Tier1Kind.TtsUnavailable,
             // Legacy/unknown — message-only path without AppError attached
             Tier1Kind.Unknown
         )

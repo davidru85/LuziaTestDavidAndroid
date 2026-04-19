@@ -133,10 +133,27 @@ class AppErrorTest {
             AppError.EmptyAudioFile,
             AppError.EmptyConversationHistory,
             AppError.StreamingFailed,
-            AppError.UnexpectedFailure -> "tier1"
+            AppError.UnexpectedFailure,
+            AppError.TtsUnavailable -> "tier1"
         }
 
         assertEquals("tier2", label)
+    }
+
+    @Test
+    fun `TtsUnavailable has local LOCAL_TTS_UNAVAILABLE code and dev-facing message`() {
+        val error: AppError = AppError.TtsUnavailable
+
+        assertEquals("LOCAL_TTS_UNAVAILABLE", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `TtsUnavailable toResourceError wraps error verbatim`() {
+        val resourceError = AppError.TtsUnavailable.toResourceError()
+
+        assertEquals(AppError.TtsUnavailable, resourceError.error)
+        assertEquals(AppError.TtsUnavailable.message, resourceError.message)
     }
 
     // region Backend-message preservation (Phase 7.2.A, Fork 5) — the six fixed-message variants

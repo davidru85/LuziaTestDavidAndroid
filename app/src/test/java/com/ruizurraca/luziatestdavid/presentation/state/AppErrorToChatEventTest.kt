@@ -134,6 +134,15 @@ class AppErrorToChatEventTest {
         assertEquals(Tier1Kind.UnexpectedFailure, (event as ChatEvent.Tier1).kind)
     }
 
+    @Test
+    fun `TtsUnavailable maps to Tier1 TtsUnavailable kind with no backendMessage`() {
+        val event = AppError.TtsUnavailable.toChatEvent()
+
+        val tier1 = event as ChatEvent.Tier1
+        assertEquals(Tier1Kind.TtsUnavailable, tier1.kind)
+        assertNull(tier1.backendMessage)
+    }
+
     // endregion
 
     // region Tier-3 — kind + detailsMessage (unchanged from 7.3.3.C)
