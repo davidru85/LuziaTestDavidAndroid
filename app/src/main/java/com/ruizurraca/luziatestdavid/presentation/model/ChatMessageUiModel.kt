@@ -1,5 +1,8 @@
 package com.ruizurraca.luziatestdavid.presentation.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 sealed interface ChatMessageUiModel {
     val id: String
     val timestamp: Long

@@ -16,10 +16,16 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.LuziaTestDavid">
+        <!-- Allows macrobenchmark + baseline-profile collectors to trace
+             this app on user-build devices. Harmless in debug builds. -->
+        <profileable
+            android:shell="true"
+            tools:targetApi="29" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.LuziaTestDavid">
+            android:theme="@style/Theme.LuziaTestDavid"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

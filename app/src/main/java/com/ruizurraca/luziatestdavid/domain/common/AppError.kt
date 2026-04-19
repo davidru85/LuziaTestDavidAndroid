@@ -87,10 +87,16 @@ sealed class AppError(
         message = "Unexpected failure."
     )
 
+    data object TtsUnavailable : AppError(
+        code = "LOCAL_TTS_UNAVAILABLE",
+        message = "Text-to-speech is unavailable."
+    )
+
     /**
      * Wraps this [AppError] into a [Resource.Error]. The `message` field is populated
      * with the AppError's default (dev-facing); user-facing copy resolves to a
-     * `stringResource` at the presentation layer via [Tier1Kind] / [Tier3Kind].
+     * `stringResource` at the presentation layer via [TransientSnackbarKind] /
+     * [BlockingErrorDialogKind].
      */
     fun toResourceError(throwable: Throwable? = null): Resource.Error = Resource.Error(
         message = message,

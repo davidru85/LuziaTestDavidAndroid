@@ -2,13 +2,16 @@ package com.ruizurraca.luziatestdavid.presentation.component
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.dp
 import com.ruizurraca.luziatestdavid.presentation.theme.LuziaTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -159,5 +162,37 @@ class ChatInputBarTest {
         setBar(draft = "", isEnabled = false)
 
         composeTestRule.onNodeWithContentDescription("Record voice message").assertIsNotEnabled()
+    }
+
+    // ----- Phase 10.6.C — auto-expanding input capped at 4 lines --------------
+
+    @Test
+    fun longMultilineDraft_fieldExpandsButCapsBelowFourLineEnvelope() {
+        // A 20-line draft validates two coupled requirements:
+        //   (1) The field must GROW with content — the previous BottomAppBar
+        //       parent clamped the field to its fixed 80 dp `containerHeight`,
+        //       defeating any `maxLines` on the TextField.
+        //   (2) The field must CAP at ~4 lines + padding — without an explicit
+        //       `maxLines = 4`, the field would expand to fit all 20 lines
+        //       (~480 dp+), pushing the mic button off the screen.
+        // The 100 dp lower bound clears BottomAppBar's 80 dp clamp with
+        // headroom; the 200 dp upper bound is comfortably above a 4-line
+        // envelope and catches an uncapped expansion.
+        val twentyLines = (1..20).joinToString("\n") { "line $it" }
+        setBar(draft = twentyLines)
+
+        val fieldBounds = composeTestRule
+            .onNodeWithContentDescription("Message input")
+            .getUnclippedBoundsInRoot()
+        val fieldHeight = fieldBounds.bottom - fieldBounds.top
+
+        assertTrue(
+            "Expected field to grow past BottomAppBar's 80 dp clamp (auto-expand requirement), got $fieldHeight",
+            fieldHeight > 100.dp
+        )
+        assertTrue(
+            "Expected field height < 200 dp (4-line cap + padding), got $fieldHeight",
+            fieldHeight < 200.dp
+        )
     }
 }

@@ -2,18 +2,23 @@ package com.ruizurraca.luziatestdavid.data.remote.mapper
 
 import com.ruizurraca.luziatestdavid.data.remote.dto.ChatMessageDto
 import com.ruizurraca.luziatestdavid.data.remote.dto.ChatRequestDto
+import com.ruizurraca.luziatestdavid.domain.locale.LocaleProvider
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.model.MessageRole
 import javax.inject.Inject
 
-class ChatMapper @Inject constructor() {
+class ChatMapper @Inject constructor(
+    private val localeProvider: LocaleProvider
+) {
 
-    fun toRequestDto(messages: List<ChatMessage>): ChatRequestDto =
-        ChatRequestDto(
+    fun toRequestDto(messages: List<ChatMessage>): ChatRequestDto {
+        val lang = localeProvider.currentLanguage()
+        return ChatRequestDto(
             messages = messages
                 .filterNot { it.isBlankAssistant() }
-                .map { it.toDto() }
+                .map { it.toDto(lang) }
         )
+    }
 
     // An assistant row with no content is transient residue from a stream that errored
     // before the first token (StreamAssistantReplyUseCase's PENDING placeholder, finalised
@@ -22,16 +27,18 @@ class ChatMapper @Inject constructor() {
     private fun ChatMessage.isBlankAssistant(): Boolean =
         role == MessageRole.ASSISTANT && content.isBlank()
 
-    private fun ChatMessage.toDto(): ChatMessageDto = when (role) {
+    private fun ChatMessage.toDto(lang: String?): ChatMessageDto = when (role) {
         MessageRole.USER -> ChatMessageDto(
             role = MessageRole.USER.wire,
             rolePrompt = requireValidUserPrompt(),
-            content = content
+            content = content,
+            lang = lang
         )
         MessageRole.ASSISTANT -> ChatMessageDto(
             role = MessageRole.ASSISTANT.wire,
             rolePrompt = null,
-            content = content
+            content = content,
+            lang = lang
         )
     }
 

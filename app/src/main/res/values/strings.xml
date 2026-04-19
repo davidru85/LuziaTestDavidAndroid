@@ -31,6 +31,8 @@
     <string name="cd_sending_message">Sending message</string>
     <string name="cd_message_sent">Message sent</string>
     <string name="cd_failed_to_send">Failed to send</string>
+    <string name="cd_tts_play">Read aloud</string>
+    <string name="cd_tts_stop">Stop reading aloud</string>
 
     <!-- Dialog copy (Phase 7.3.1.A) -->
     <string name="dialog_mic_permission_title">Microphone permission needed</string>
@@ -51,30 +53,32 @@
     <string name="bubble_failed_latest_message">I\'ve gone blank. Mind retrying?</string>
     <string name="bubble_failed_older_message">Sorry, empty message</string>
 
-    <!-- Tier-1 Snackbar copy, resolved by kind when no backend message is supplied
-         (Phase 7.3.3.H.2). Backend-supplied messages preempt these per option iii. -->
-    <string name="tier1_bad_request">The request was invalid.</string>
-    <string name="tier1_file_too_large">The audio file is too large.</string>
-    <string name="tier1_timeout">The request timed out.</string>
-    <string name="tier1_network">Network connection failed.</string>
-    <string name="tier1_validation_error">Please check your input and try again.</string>
-    <string name="tier1_recorder_already_running">Recording is already in progress.</string>
-    <string name="tier1_recorder_not_active">No active recording.</string>
-    <string name="tier1_recorder_no_output">No output file for the recording.</string>
-    <string name="tier1_recorder_start_failed">Couldn\'t start the recording. Please try again.</string>
-    <string name="tier1_recorder_stop_failed">Couldn\'t stop the recording. Please try again.</string>
-    <string name="tier1_empty_audio_file">The audio file is empty. Please record again.</string>
-    <string name="tier1_empty_conversation_history">Start a conversation first.</string>
-    <string name="tier1_streaming_failed">The reply stream was interrupted. Please try again.</string>
-    <string name="tier1_unexpected_failure">Something went wrong. Please try again.</string>
+    <!-- Transient Snackbar copy, resolved by kind when no backend message is
+         supplied (Phase 7.3.3.H.2). Backend-supplied messages preempt these
+         per option iii. -->
+    <string name="transient_snackbar_bad_request">The request was invalid.</string>
+    <string name="transient_snackbar_file_too_large">The audio file is too large.</string>
+    <string name="transient_snackbar_timeout">The request timed out.</string>
+    <string name="transient_snackbar_network">Network connection failed.</string>
+    <string name="transient_snackbar_validation_error">Please check your input and try again.</string>
+    <string name="transient_snackbar_recorder_already_running">Recording is already in progress.</string>
+    <string name="transient_snackbar_recorder_not_active">No active recording.</string>
+    <string name="transient_snackbar_recorder_no_output">No output file for the recording.</string>
+    <string name="transient_snackbar_recorder_start_failed">Couldn\'t start the recording. Please try again.</string>
+    <string name="transient_snackbar_recorder_stop_failed">Couldn\'t stop the recording. Please try again.</string>
+    <string name="transient_snackbar_empty_audio_file">The audio file is empty. Please record again.</string>
+    <string name="transient_snackbar_empty_conversation_history">Start a conversation first.</string>
+    <string name="transient_snackbar_streaming_failed">The reply stream was interrupted. Please try again.</string>
+    <string name="transient_snackbar_unexpected_failure">Something went wrong. Please try again.</string>
+    <string name="transient_snackbar_tts_unavailable">Read aloud isn\'t available on this device.</string>
 
-    <!-- Tier-3 AlertDialog copy (Phase 7.3.3.C) -->
-    <string name="dialog_tier3_service_unavailable_title">Service unavailable</string>
-    <string name="dialog_tier3_service_unavailable_body">We can\'t reach Luzia right now. Please try again in a moment.</string>
-    <string name="dialog_tier3_internal_title">Something went wrong</string>
-    <string name="dialog_tier3_internal_body">Luzia hit an unexpected error. You can try sending your message again.</string>
-    <string name="dialog_tier3_unexpected_title">Unexpected error</string>
-    <string name="dialog_tier3_unexpected_body">Something we didn\'t anticipate happened. Please try again — if it keeps happening, let us know.</string>
-    <string name="dialog_tier3_show_details">Show details</string>
-    <string name="dialog_tier3_hide_details">Hide details</string>
+    <!-- Blocking-error AlertDialog copy (Phase 7.3.3.C). -->
+    <string name="blocking_error_dialog_service_unavailable_title">Service unavailable</string>
+    <string name="blocking_error_dialog_service_unavailable_body">We can\'t reach Luzia right now. Please try again in a moment.</string>
+    <string name="blocking_error_dialog_internal_title">Something went wrong</string>
+    <string name="blocking_error_dialog_internal_body">Luzia hit an unexpected error. You can try sending your message again.</string>
+    <string name="blocking_error_dialog_unexpected_title">Unexpected error</string>
+    <string name="blocking_error_dialog_unexpected_body">Something we didn\'t anticipate happened. Please try again — if it keeps happening, let us know.</string>
+    <string name="blocking_error_dialog_show_details">Show details</string>
+    <string name="blocking_error_dialog_hide_details">Hide details</string>
 </resources>

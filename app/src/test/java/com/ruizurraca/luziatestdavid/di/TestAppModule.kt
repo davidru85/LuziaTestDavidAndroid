@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.ruizurraca.luziatestdavid.data.local.LuziaDatabase
 import com.ruizurraca.luziatestdavid.data.local.dao.ChatMessageDao
 import com.ruizurraca.luziatestdavid.domain.audio.AudioRecorder
+import com.ruizurraca.luziatestdavid.domain.audio.TextSpeaker
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import dagger.Module
 import dagger.Provides
@@ -24,6 +25,7 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.util.Locale
 import javax.inject.Singleton
 
 @Module
@@ -86,6 +88,10 @@ object TestAudioModule {
     @Provides
     @Singleton
     fun provideAudioRecorder(): AudioRecorder = FakeAudioRecorder()
+
+    @Provides
+    @Singleton
+    fun provideTextSpeaker(): TextSpeaker = FakeTextSpeaker()
 }
 
 private class FakeAudioRecorder : AudioRecorder {
@@ -94,5 +100,13 @@ private class FakeAudioRecorder : AudioRecorder {
     override suspend fun stop(): Resource<File> =
         Resource.Error("FakeAudioRecorder.stop() called in a test that did not override TestAudioModule")
 
+    override fun release() = Unit
+}
+
+private class FakeTextSpeaker : TextSpeaker {
+    override suspend fun speak(text: String, locale: Locale): Resource<Unit> =
+        Resource.Success(Unit)
+
+    override fun stop() = Unit
     override fun release() = Unit
 }

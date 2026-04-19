@@ -3,15 +3,20 @@ package com.ruizurraca.luziatestdavid.presentation.screen
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,7 +27,9 @@ import com.ruizurraca.luziatestdavid.domain.model.PersonaEntry
 import com.ruizurraca.luziatestdavid.presentation.component.AssistantMessageBubble
 import com.ruizurraca.luziatestdavid.presentation.component.ChatInputBar
 import com.ruizurraca.luziatestdavid.presentation.component.ChatTopAppBar
+import com.ruizurraca.luziatestdavid.presentation.component.RetryAssistantReplyButton
 import com.ruizurraca.luziatestdavid.presentation.component.RoleSelectorChips
+import com.ruizurraca.luziatestdavid.presentation.component.TtsPlayButton
 import com.ruizurraca.luziatestdavid.presentation.component.UserMessageBubble
 import com.ruizurraca.luziatestdavid.presentation.model.AssistantStreamState
 import com.ruizurraca.luziatestdavid.presentation.model.ChatMessageUiModel
@@ -36,6 +43,7 @@ fun ChatScreenContent(
     selectedPersona: Persona,
     personaEntries: List<PersonaEntry>,
     isRecording: Boolean,
+    currentlySpeakingId: String?,
     snackbarHostState: SnackbarHostState,
     onDraftChange: (String) -> Unit,
     onMicTap: () -> Unit,
@@ -43,6 +51,7 @@ fun ChatScreenContent(
     onPersonaSelected: (Persona) -> Unit,
     onRetryLastFailure: () -> Unit,
     onConfirmClearConversation: () -> Unit,
+    onTtsTap: (messageId: String, text: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val lastFailedAssistantId = remember(state.messages) {
@@ -51,16 +60,51 @@ fun ChatScreenContent(
         }?.id
     }
 
+    // Phase 10.6.D: the TTS button is rendered only beneath the LAST assistant
+    // row, and only when its state is RECEIVED. Holding the id of the last
+    // assistant lets the item renderer keep its equality check cheap.
+    val lastAssistantId = remember(state.messages) {
+        state.messages.lastOrNull { it is ChatMessageUiModel.Assistant }?.id
+    }
+
+    // Phase 10.6.B (fixed): keep the viewport locked to the newest message.
+    // Short lists bottom-anchor via `Arrangement.spacedBy(_, Alignment.Bottom)`
+    // on the LazyColumn; long lists rely on this effect to scroll each new
+    // message into view as it arrives.
+    val listState = rememberLazyListState()
+    LaunchedEffect(state.messages.size) {
+        if (state.messages.isNotEmpty()) {
+            listState.scrollToItem(state.messages.lastIndex)
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            ChatTopAppBar(
-                title = stringResource(R.string.app_title),
-                isConversationEmpty = state.messages.isEmpty(),
-                onConfirmClearConversation = onConfirmClearConversation
-            )
+            // Phase 10.6.B: stack ChatTopAppBar + RoleSelectorChips inside the
+            // topBar slot so both stay pinned when the IME opens — previously
+            // the role selector lived in the content area and could get
+            // squeezed out along with the message list on IME show.
+            Column {
+                ChatTopAppBar(
+                    title = stringResource(R.string.app_title),
+                    isConversationEmpty = state.messages.isEmpty(),
+                    onConfirmClearConversation = onConfirmClearConversation
+                )
+                RoleSelectorChips(
+                    entries = personaEntries,
+                    selectedPersona = selectedPersona,
+                    onPersonaSelected = onPersonaSelected,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
         },
         bottomBar = {
+            // Phase 10.6.B (fixed): Scaffold's default contentWindowInsets does
+            // NOT include WindowInsets.ime — and with enableEdgeToEdge() on
+            // API 30+ the window doesn't physically resize even with
+            // adjustResize, so the IME is reported as an inset instead. Push
+            // the input bar above the keyboard explicitly via imePadding().
             ChatInputBar(
                 draft = state.draft,
                 isRecording = isRecording,
@@ -68,33 +112,58 @@ fun ChatScreenContent(
                 streamingIndicatorLabel = state.streamingIndicatorLabel(),
                 onDraftChange = onDraftChange,
                 onMicTap = onMicTap,
-                onSendTap = onSendTap
+                onSendTap = onSendTap,
+                modifier = Modifier.imePadding()
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
-            RoleSelectorChips(
-                entries = personaEntries,
-                selectedPersona = selectedPersona,
-                onPersonaSelected = onPersonaSelected,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 16.dp,
-                    vertical = 8.dp
-                )
-            ) {
-                items(items = state.messages, key = { it.id }) { message ->
-                    when (message) {
-                        is ChatMessageUiModel.User -> UserMessageBubble(model = message)
-                        is ChatMessageUiModel.Assistant -> AssistantMessageBubble(
-                            model = message,
-                            onRetry = if (message.id == lastFailedAssistantId) onRetryLastFailure else null
-                        )
+        // Phase 10.6.B (fixed): bottom-anchored message list via
+        // Arrangement.spacedBy(_, Alignment.Bottom) — anchors short content to
+        // the bottom of the viewport (empty space above), while longer
+        // conversations fill the viewport and the LaunchedEffect above keeps
+        // the newest message visible.
+        //
+        // Note re. the earlier reverseLayout attempt: Compose docs explicitly
+        // state that reverseLayout does NOT change verticalArrangement's
+        // alignment — so `spacedBy(_, Alignment.Top)` (the default) overrode
+        // the bottom anchoring the reverseLayout default would have provided.
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Bottom),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            items(items = state.messages, key = { it.id }) { message ->
+                when (message) {
+                    is ChatMessageUiModel.User -> UserMessageBubble(model = message)
+                    is ChatMessageUiModel.Assistant -> {
+                        // Phase 10.6.A: retry button lives beneath the bubble,
+                        // rendered only for the latest FAILED assistant row.
+                        // `lastFailedAssistantId` equality implies streamState
+                        // == FAILED by construction.
+                        val isRetryable = message.id == lastFailedAssistantId
+                        // Phase 10.6.D: TTS affordance under the latest assistant
+                        // row only, gated on streamState == RECEIVED.
+                        val showTtsButton = message.id == lastAssistantId &&
+                            message.streamState == AssistantStreamState.RECEIVED
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            AssistantMessageBubble(
+                                model = message,
+                                isRetryable = isRetryable
+                            )
+                            if (isRetryable) {
+                                RetryAssistantReplyButton(onClick = onRetryLastFailure)
+                            }
+                            if (showTtsButton) {
+                                TtsPlayButton(
+                                    isSpeaking = currentlySpeakingId == message.id,
+                                    onClick = { onTtsTap(message.id, message.content) }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -125,13 +194,15 @@ private fun ChatScreenContentPreview_IdleEmpty() {
             selectedPersona = Persona.STUDENT,
             personaEntries = previewPersonaEntries(),
             isRecording = false,
+            currentlySpeakingId = null,
             snackbarHostState = remember { SnackbarHostState() },
             onDraftChange = {},
             onMicTap = {},
             onSendTap = {},
             onPersonaSelected = {},
             onRetryLastFailure = {},
-            onConfirmClearConversation = {}
+            onConfirmClearConversation = {},
+            onTtsTap = { _, _ -> }
         )
     }
 }
@@ -160,13 +231,15 @@ private fun ChatScreenContentPreview_Conversation() {
             selectedPersona = Persona.STUDENT,
             personaEntries = previewPersonaEntries(),
             isRecording = false,
+            currentlySpeakingId = null,
             snackbarHostState = remember { SnackbarHostState() },
             onDraftChange = {},
             onMicTap = {},
             onSendTap = {},
             onPersonaSelected = {},
             onRetryLastFailure = {},
-            onConfirmClearConversation = {}
+            onConfirmClearConversation = {},
+            onTtsTap = { _, _ -> }
         )
     }
 }
@@ -195,13 +268,15 @@ private fun ChatScreenContentPreview_DarkThinking() {
             selectedPersona = Persona.STUDENT,
             personaEntries = previewPersonaEntries(),
             isRecording = false,
+            currentlySpeakingId = null,
             snackbarHostState = remember { SnackbarHostState() },
             onDraftChange = {},
             onMicTap = {},
             onSendTap = {},
             onPersonaSelected = {},
             onRetryLastFailure = {},
-            onConfirmClearConversation = {}
+            onConfirmClearConversation = {},
+            onTtsTap = { _, _ -> }
         )
     }
 }

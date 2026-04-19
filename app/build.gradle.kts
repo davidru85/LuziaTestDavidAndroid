@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.androidx.baselineprofile)
+    jacoco
 }
 
 val localProps = Properties().apply {
@@ -36,12 +38,26 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        // Benchmark build type: mirrors release (R8 + resource-shrink)
+        // but uses the debug signing config so the APK is installable,
+        // and is not debuggable so ART can AOT-optimize the baseline
+        // profile. Only used by the :baseline-profile test module.
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+            isDebuggable = false
         }
     }
 
@@ -78,7 +94,16 @@ android {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.useJUnitPlatform()
+            // Intentionally NOT setting maxParallelForks — measured on 2026-04-19
+            // with 6 forks (half of 12 cores), wall-clock regressed 29 s → 48 s.
+            // Fork-JVM startup (~3-5 s × 6) + Robolectric per-fork shadow-classloader
+            // init exceed the parallelism gain at a 442-test / ~29 s suite size.
+            // Revisit when serial runtime exceeds ~2-3 min. ROADMAP 10.5.B.
         }
+    }
+
+    lint {
+        baseline = file("lint-baseline.xml")
     }
 }
 
@@ -86,6 +111,56 @@ kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+// AGP 9 emits post-transform bytecode under intermediates/classes/<variant>/transformClassesWithAsm/dirs —
+// that path is what the JaCoCo agent instrumented at test-time, so the report must point there.
+tasks.register<JacocoReport>("jacocoStagingDebugCoverageReport") {
+    group = "verification"
+    description = "Generate Jacoco coverage report for the stagingDebug unit-test run."
+    dependsOn("testStagingDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    val coverageExcludes = listOf(
+        "**/R.class",
+        "**/R\$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        "**/*\$WhenMappings.*",
+        "**/*_Factory*.*",
+        "**/*_MembersInjector.*",
+        "**/*_HiltModules*.*",
+        "**/Hilt_*.*",
+        "**/Dagger*Component*.*",
+        "**/*_GeneratedInjector.*",
+        "**/*_Impl.*",
+        "**/*Impl_*.*",
+        "**/ComposableSingletons*",
+    )
+
+    classDirectories.setFrom(
+        fileTree(layout.buildDirectory.dir("intermediates/classes/stagingDebug/transformStagingDebugClassesWithAsm/dirs")) {
+            exclude(coverageExcludes)
+        }
+    )
+
+    sourceDirectories.setFrom(files("${project.projectDir}/src/main/java"))
+
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include("outputs/unit_test_code_coverage/stagingDebugUnitTest/testStagingDebugUnitTest.exec")
+        }
+    )
 }
 
 dependencies {
@@ -136,4 +211,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    // Consumes the generated baseline profile from the :baseline-profile
+    // producer module at build time; the plugin merges it into the APK.
+    "baselineProfile"(project(":baseline-profile"))
 }

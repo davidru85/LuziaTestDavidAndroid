@@ -10,12 +10,12 @@ To demonstrate senior-level Android engineering through a seamless, real-time in
 ## 🚫 The "Golden Rules" (Non-Negotiable)
 These rules are absolute. Any violation is a failure of the implementation.
 
-1.  **Zero Local ASR/TTS:** The Android client **MUST NOT** perform any local speech-to-text or text-to-speech. All transcription happens on the backend (Whisper). All communication is text-based.
+1.  **Zero Local STT/ASR for user input:** The Android client **MUST NOT** perform any local speech-to-text or automatic speech recognition. User audio is captured raw and transmitted to the backend; transcription is performed server-side (Whisper). On the **output** side, the Android system TTS (`android.speech.tts.TextToSpeech`) MAY be invoked on-demand by the user to read an assistant reply out loud. No third-party TTS engines; no automatic / background playback.
 2.  **Zero Local Audio Processing:** The client is a "capture and transmit" agent. No noise reduction, no re-encoding. Send the raw `.m4a`.
 3.  **Domain Purity:** The `domain/` layer must have **ZERO** Android dependencies. It must be pure Kotlin, making it 100% unit-testable on the JVM.
 4.  **No Data Leakage:** The `presentation/` layer must never import from `data/`. It only interacts with the `domain/` layer via interfaces.
 5.  **Strict TDD:** No production code shall be written without a preceding failing test (**RED $\rightarrow$ GREEN $\rightarrow$ REFACTOR**).
-6.  **Text-Only UI:** The chat interface is strictly text-based. No audio players, waveforms, or playback controls are permitted in the message list.
+6.  **Text-first UI:** The chat message list renders messages as text only — no audio players, waveforms, or playback controls for recorded user audio, either inbound or outbound. The sole permitted output-side audio affordance is a TTS control (single icon button) that invokes the Android system `TextToSpeech` on a rendered assistant message's text.
 
 ## 🛠 Tech Stack Summary
 *   **Language:** Kotlin

@@ -10,6 +10,7 @@ import com.ruizurraca.luziatestdavid.data.remote.mapper.ErrorMapper
 import com.ruizurraca.luziatestdavid.data.remote.sse.SseParser
 import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
+import com.ruizurraca.luziatestdavid.domain.locale.LocaleProvider
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.model.MessageRole
 import com.ruizurraca.luziatestdavid.domain.model.MessageStatus
@@ -48,7 +49,14 @@ class ChatRepositoryImplTest {
 
     private val apiClient: L1ApiClient = mockk()
     private val sseParser = SseParser()
-    private val chatMapper = ChatMapper()
+    // Null-lang provider: the repo's streamChat path composes the request DTO
+    // but these tests assert on SSE emission / error routing, not on the
+    // optional `lang` wire field. ChatMapperTest covers lang passthrough.
+    private val chatMapper = ChatMapper(
+        localeProvider = object : LocaleProvider {
+            override fun currentLanguage(): String? = null
+        }
+    )
     private val errorMapper = ErrorMapper(
         json = Json {
             ignoreUnknownKeys = true
@@ -58,6 +66,12 @@ class ChatRepositoryImplTest {
     )
     private val dao: ChatMessageDao = mockk()
     private val dispatcher = UnconfinedTestDispatcher()
+    // Default null-lang provider: the pre-10.6.H transcribe + streamChat tests
+    // don't care about the wire `lang` field. A dedicated test further down
+    // verifies lang passthrough on transcribe with a non-null provider.
+    private val localeProvider = object : LocaleProvider {
+        override fun currentLanguage(): String? = null
+    }
 
     private val repository = ChatRepositoryImpl(
         apiClient = apiClient,
@@ -65,6 +79,7 @@ class ChatRepositoryImplTest {
         chatMapper = chatMapper,
         errorMapper = errorMapper,
         dao = dao,
+        localeProvider = localeProvider,
         ioDispatcher = dispatcher
     )
 
@@ -77,12 +92,12 @@ class ChatRepositoryImplTest {
             writeBytes(audioBytes)
             deleteOnExit()
         }
-        coEvery { apiClient.transcribe(any(), any()) } returns TranscribeResponseDto("hello world")
+        coEvery { apiClient.transcribe(any(), any(), any()) } returns TranscribeResponseDto("hello world")
 
         val result = repository.transcribeAudio(audioFile)
 
         assertEquals(Resource.Success("hello world"), result)
-        coVerify { apiClient.transcribe(match { it.contentEquals(audioBytes) }, any()) }
+        coVerify { apiClient.transcribe(match { it.contentEquals(audioBytes) }, any(), any()) }
     }
 
     @Test
@@ -91,13 +106,40 @@ class ChatRepositoryImplTest {
             writeBytes(byteArrayOf(0x1))
             deleteOnExit()
         }
-        coEvery { apiClient.transcribe(any(), any()) } throws IOException("socket reset")
+        coEvery { apiClient.transcribe(any(), any(), any()) } throws IOException("socket reset")
 
         val result = repository.transcribeAudio(audioFile)
 
         assertTrue(result is Resource.Error)
         val error = result as Resource.Error
         assertEquals(AppError.Network(), error.error)
+    }
+
+    @Test
+    fun `transcribeAudio forwards resolved lang from LocaleProvider to apiClient (Phase 10_6_H)`() = runTest(dispatcher) {
+        val audioFile = File.createTempFile("audio", ".m4a").apply {
+            writeBytes(byteArrayOf(0x1))
+            deleteOnExit()
+        }
+        val repoWithEsLocale = ChatRepositoryImpl(
+            apiClient = apiClient,
+            sseParser = sseParser,
+            chatMapper = chatMapper,
+            errorMapper = errorMapper,
+            dao = dao,
+            localeProvider = object : LocaleProvider {
+                override fun currentLanguage(): String? = "es"
+            },
+            ioDispatcher = dispatcher
+        )
+        coEvery { apiClient.transcribe(any(), any(), any()) } returns TranscribeResponseDto("hola")
+
+        repoWithEsLocale.transcribeAudio(audioFile)
+
+        // Wiring assertion: the repo must pass the resolved locale through
+        // as the third argument to apiClient.transcribe. L1ApiClientTest
+        // covers what happens to that argument on the multipart wire.
+        coVerify { apiClient.transcribe(any(), any(), "es") }
     }
 
     // endregion

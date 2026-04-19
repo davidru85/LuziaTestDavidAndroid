@@ -1,9 +1,12 @@
 package com.ruizurraca.luziatestdavid.presentation.screen
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -74,12 +77,14 @@ class ChatScreenContentTest {
         state: ChatUiState = ChatUiState.Idle(),
         selectedPersona: Persona = Persona.STUDENT,
         isRecording: Boolean = false,
+        currentlySpeakingId: String? = null,
         onDraftChange: (String) -> Unit = {},
         onMicTap: () -> Unit = {},
         onSendTap: () -> Unit = {},
         onPersonaSelected: (Persona) -> Unit = {},
         onRetryLastFailure: () -> Unit = {},
-        onConfirmClearConversation: () -> Unit = {}
+        onConfirmClearConversation: () -> Unit = {},
+        onTtsTap: (String, String) -> Unit = { _, _ -> }
     ) {
         composeTestRule.setContent {
             LuziaTheme {
@@ -88,13 +93,15 @@ class ChatScreenContentTest {
                     selectedPersona = selectedPersona,
                     personaEntries = personaEntries,
                     isRecording = isRecording,
+                    currentlySpeakingId = currentlySpeakingId,
                     snackbarHostState = SnackbarHostState(),
                     onDraftChange = onDraftChange,
                     onMicTap = onMicTap,
                     onSendTap = onSendTap,
                     onPersonaSelected = onPersonaSelected,
                     onRetryLastFailure = onRetryLastFailure,
-                    onConfirmClearConversation = onConfirmClearConversation
+                    onConfirmClearConversation = onConfirmClearConversation,
+                    onTtsTap = onTtsTap
                 )
             }
         }
@@ -180,6 +187,9 @@ class ChatScreenContentTest {
 
     @Test
     fun retryOnLastFailedAssistant_invokesOnRetryLastFailure() {
+        // Phase 10.6.A moved the retry control out of the bubble and into a
+        // TextButton below it — the test now targets the button by its visible
+        // label rather than a contentDescription on an IconButton.
         var retries = 0
         setContent(
             state = ChatUiState.Idle(
@@ -191,9 +201,45 @@ class ChatScreenContentTest {
             onRetryLastFailure = { retries++ }
         )
 
-        composeTestRule.onNodeWithContentDescription("Retry reply").performClick()
+        composeTestRule.onNodeWithText("Retry reply").performClick()
 
         assertEquals(1, retries)
+    }
+
+    // ----- Phase 10.6.B — bottom-anchored message list --------------------
+
+    @Test
+    fun manyMessages_latestVisibleAtBottom_oldestNotComposed() {
+        // With 50 messages that exceed viewport height, bottom-anchored layout
+        // (reverseLayout=true) should render the latest message in the viewport
+        // and leave the oldest scrolled off-screen — i.e. not composed by the
+        // LazyColumn at all. Under top-anchored layout, the opposite holds.
+        val messages = (1..50).map { i ->
+            userMsg(id = "u$i", content = "message $i")
+        }
+        setContent(state = ChatUiState.Idle(messages = messages))
+
+        composeTestRule.onNodeWithText("message 50").assertIsDisplayed()
+        composeTestRule.onNodeWithText("message 1").assertDoesNotExist()
+    }
+
+    @Test
+    fun olderFailedAssistant_doesNotRenderRetryButton() {
+        // Only the LAST failed assistant is retryable — older failures below it
+        // must not show the retry button (copy in the bubble is already the
+        // apologetic "Sorry, empty message" variant per 7.3.3.B).
+        setContent(
+            state = ChatUiState.Idle(
+                messages = listOf(
+                    assistantMsg(id = "old-fail", streamState = AssistantStreamState.FAILED),
+                    userMsg(id = "u1", content = "pregunta"),
+                    assistantMsg(id = "latest-fail", streamState = AssistantStreamState.FAILED)
+                )
+            )
+        )
+
+        // Exactly one retry button in the whole screen — for the latest failure.
+        composeTestRule.onAllNodesWithText("Retry reply").assertCountEquals(1)
     }
 
     // ----- Delete-sweep + confirm flow ----------------------------------------
@@ -217,6 +263,158 @@ class ChatScreenContentTest {
         composeTestRule.onNodeWithText("Clear").performClick()
 
         assertEquals(1, cleared)
+    }
+
+    // ----- Phase 10.6.D — TTS on last received assistant ----------------------
+
+    @Test
+    fun lastReceivedAssistant_rendersTtsButton() {
+        setContent(
+            state = ChatUiState.Idle(
+                messages = listOf(
+                    userMsg(id = "u1", content = "pregunta"),
+                    assistantMsg(id = "a1", streamState = AssistantStreamState.RECEIVED)
+                )
+            )
+        )
+
+        composeTestRule.onNodeWithContentDescription("Read aloud").assertIsDisplayed()
+    }
+
+    @Test
+    fun userOnlyConversation_doesNotRenderTtsButton() {
+        setContent(
+            state = ChatUiState.Idle(
+                messages = listOf(userMsg(id = "u1", content = "sin respuesta aún"))
+            )
+        )
+
+        composeTestRule.onNodeWithContentDescription("Read aloud").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Stop reading aloud")
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun loadingAssistant_doesNotRenderTtsButton() {
+        setContent(
+            state = ChatUiState.Idle(
+                messages = listOf(
+                    userMsg(id = "u1"),
+                    assistantMsg(id = "a1", streamState = AssistantStreamState.LOADING)
+                )
+            )
+        )
+
+        composeTestRule.onNodeWithContentDescription("Read aloud").assertDoesNotExist()
+    }
+
+    @Test
+    fun streamingAssistant_doesNotRenderTtsButton() {
+        setContent(
+            state = ChatUiState.Streaming(
+                messages = listOf(
+                    userMsg(id = "u1"),
+                    assistantMsg(
+                        id = "a1",
+                        content = "respuesta parcial",
+                        streamState = AssistantStreamState.STREAMING
+                    )
+                ),
+                draft = ""
+            )
+        )
+
+        composeTestRule.onNodeWithContentDescription("Read aloud").assertDoesNotExist()
+    }
+
+    @Test
+    fun failedAssistant_doesNotRenderTtsButton() {
+        setContent(
+            state = ChatUiState.Idle(
+                messages = listOf(
+                    userMsg(id = "u1"),
+                    assistantMsg(id = "a1", streamState = AssistantStreamState.FAILED)
+                )
+            )
+        )
+
+        composeTestRule.onNodeWithContentDescription("Read aloud").assertDoesNotExist()
+    }
+
+    @Test
+    fun olderReceivedAssistantWhenLatestIsLoading_noButtonOnAnyRow() {
+        // The last assistant is LOADING; the older RECEIVED one must NOT render
+        // a button either — the spec says "on the last assistant row only".
+        setContent(
+            state = ChatUiState.Idle(
+                messages = listOf(
+                    userMsg(id = "u1"),
+                    assistantMsg(id = "a-old", content = "vieja respuesta"),
+                    userMsg(id = "u2"),
+                    assistantMsg(id = "a-new", streamState = AssistantStreamState.LOADING)
+                )
+            )
+        )
+
+        composeTestRule.onAllNodesWithText("Read aloud").assertCountEquals(0)
+        composeTestRule.onNodeWithContentDescription("Read aloud").assertDoesNotExist()
+    }
+
+    @Test
+    fun twoReceivedAssistants_onlyTheLastOneGetsTheButton() {
+        setContent(
+            state = ChatUiState.Idle(
+                messages = listOf(
+                    userMsg(id = "u1"),
+                    assistantMsg(id = "a-old", content = "vieja respuesta"),
+                    userMsg(id = "u2"),
+                    assistantMsg(id = "a-new", content = "respuesta más reciente")
+                )
+            )
+        )
+
+        composeTestRule.onAllNodesWithContentDescription("Read aloud")
+            .assertCountEquals(1)
+    }
+
+    @Test
+    fun currentlySpeakingLastAssistant_swapsToStopIcon() {
+        setContent(
+            state = ChatUiState.Idle(
+                messages = listOf(
+                    userMsg(id = "u1"),
+                    assistantMsg(id = "a1", streamState = AssistantStreamState.RECEIVED)
+                )
+            ),
+            currentlySpeakingId = "a1"
+        )
+
+        composeTestRule.onNodeWithContentDescription("Stop reading aloud")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Read aloud").assertDoesNotExist()
+    }
+
+    @Test
+    fun tappingTtsButton_invokesOnTtsTapWithMessageIdAndContent() {
+        var capturedId: String? = null
+        var capturedText: String? = null
+        setContent(
+            state = ChatUiState.Idle(
+                messages = listOf(
+                    userMsg(id = "u1"),
+                    assistantMsg(id = "a1", content = "la fotosíntesis es…")
+                )
+            ),
+            onTtsTap = { id, text ->
+                capturedId = id
+                capturedText = text
+            }
+        )
+
+        composeTestRule.onNodeWithContentDescription("Read aloud").performClick()
+
+        assertEquals("a1", capturedId)
+        assertEquals("la fotosíntesis es…", capturedText)
     }
 
     // ----- Send tap integration -----------------------------------------------

@@ -79,9 +79,19 @@ class A11yStringMigrationTest {
         assertEquals("Failed to send", context.getString(R.string.cd_failed_to_send))
     }
 
+    @Test
+    fun `cd_tts_play matches expected English value`() {
+        assertEquals("Read aloud", context.getString(R.string.cd_tts_play))
+    }
+
+    @Test
+    fun `cd_tts_stop matches expected English value`() {
+        assertEquals("Stop reading aloud", context.getString(R.string.cd_tts_stop))
+    }
+
     // endregion
 
-    // region Dialog copy (mic-rationale + Tier-3 dismiss)
+    // region Dialog copy (mic-rationale + BlockingErrorDialog dismiss)
 
     @Test
     fun `dialog_mic_permission_title matches expected English value`() {
@@ -173,64 +183,64 @@ class A11yStringMigrationTest {
 
     // endregion
 
-    // region Tier-3 AlertDialog copy (Phase 7.3.3.C)
+    // region BlockingErrorDialog copy (Phase 7.3.3.C)
 
     @Test
-    fun `dialog_tier3_service_unavailable_title matches expected English value`() {
+    fun `blocking_error_dialog_service_unavailable_title matches expected English value`() {
         assertEquals(
             "Service unavailable",
-            context.getString(R.string.dialog_tier3_service_unavailable_title)
+            context.getString(R.string.blocking_error_dialog_service_unavailable_title)
         )
     }
 
     @Test
-    fun `dialog_tier3_service_unavailable_body matches expected English value`() {
+    fun `blocking_error_dialog_service_unavailable_body matches expected English value`() {
         assertEquals(
             "We can't reach Luzia right now. Please try again in a moment.",
-            context.getString(R.string.dialog_tier3_service_unavailable_body)
+            context.getString(R.string.blocking_error_dialog_service_unavailable_body)
         )
     }
 
     @Test
-    fun `dialog_tier3_internal_title matches expected English value`() {
+    fun `blocking_error_dialog_internal_title matches expected English value`() {
         assertEquals(
             "Something went wrong",
-            context.getString(R.string.dialog_tier3_internal_title)
+            context.getString(R.string.blocking_error_dialog_internal_title)
         )
     }
 
     @Test
-    fun `dialog_tier3_internal_body matches expected English value`() {
+    fun `blocking_error_dialog_internal_body matches expected English value`() {
         assertEquals(
             "Luzia hit an unexpected error. You can try sending your message again.",
-            context.getString(R.string.dialog_tier3_internal_body)
+            context.getString(R.string.blocking_error_dialog_internal_body)
         )
     }
 
     @Test
-    fun `dialog_tier3_unexpected_title matches expected English value`() {
+    fun `blocking_error_dialog_unexpected_title matches expected English value`() {
         assertEquals(
             "Unexpected error",
-            context.getString(R.string.dialog_tier3_unexpected_title)
+            context.getString(R.string.blocking_error_dialog_unexpected_title)
         )
     }
 
     @Test
-    fun `dialog_tier3_unexpected_body matches expected English value`() {
+    fun `blocking_error_dialog_unexpected_body matches expected English value`() {
         assertEquals(
             "Something we didn't anticipate happened. Please try again — if it keeps happening, let us know.",
-            context.getString(R.string.dialog_tier3_unexpected_body)
+            context.getString(R.string.blocking_error_dialog_unexpected_body)
         )
     }
 
     @Test
-    fun `dialog_tier3_show_details matches expected English value`() {
-        assertEquals("Show details", context.getString(R.string.dialog_tier3_show_details))
+    fun `blocking_error_dialog_show_details matches expected English value`() {
+        assertEquals("Show details", context.getString(R.string.blocking_error_dialog_show_details))
     }
 
     @Test
-    fun `dialog_tier3_hide_details matches expected English value`() {
-        assertEquals("Hide details", context.getString(R.string.dialog_tier3_hide_details))
+    fun `blocking_error_dialog_hide_details matches expected English value`() {
+        assertEquals("Hide details", context.getString(R.string.blocking_error_dialog_hide_details))
     }
 
     // endregion
@@ -260,102 +270,110 @@ class A11yStringMigrationTest {
 
     // endregion
 
-    // region Tier-1 Snackbar copy (Phase 7.3.3.H.2 — composable-resolved)
+    // region TransientSnackbar copy (Phase 7.3.3.H.2 — composable-resolved)
 
     @Test
-    fun `tier1_bad_request matches expected English value`() {
-        assertEquals("The request was invalid.", context.getString(R.string.tier1_bad_request))
+    fun `transient_snackbar_bad_request matches expected English value`() {
+        assertEquals("The request was invalid.", context.getString(R.string.transient_snackbar_bad_request))
     }
 
     @Test
-    fun `tier1_file_too_large matches expected English value`() {
-        assertEquals("The audio file is too large.", context.getString(R.string.tier1_file_too_large))
+    fun `transient_snackbar_file_too_large matches expected English value`() {
+        assertEquals("The audio file is too large.", context.getString(R.string.transient_snackbar_file_too_large))
     }
 
     @Test
-    fun `tier1_timeout matches expected English value`() {
-        assertEquals("The request timed out.", context.getString(R.string.tier1_timeout))
+    fun `transient_snackbar_timeout matches expected English value`() {
+        assertEquals("The request timed out.", context.getString(R.string.transient_snackbar_timeout))
     }
 
     @Test
-    fun `tier1_network matches expected English value`() {
-        assertEquals("Network connection failed.", context.getString(R.string.tier1_network))
+    fun `transient_snackbar_network matches expected English value`() {
+        assertEquals("Network connection failed.", context.getString(R.string.transient_snackbar_network))
     }
 
     @Test
-    fun `tier1_validation_error matches expected English value`() {
+    fun `transient_snackbar_validation_error matches expected English value`() {
         assertEquals(
             "Please check your input and try again.",
-            context.getString(R.string.tier1_validation_error)
+            context.getString(R.string.transient_snackbar_validation_error)
         )
     }
 
     @Test
-    fun `tier1_recorder_already_running matches expected English value`() {
+    fun `transient_snackbar_recorder_already_running matches expected English value`() {
         assertEquals(
             "Recording is already in progress.",
-            context.getString(R.string.tier1_recorder_already_running)
+            context.getString(R.string.transient_snackbar_recorder_already_running)
         )
     }
 
     @Test
-    fun `tier1_recorder_not_active matches expected English value`() {
-        assertEquals("No active recording.", context.getString(R.string.tier1_recorder_not_active))
+    fun `transient_snackbar_recorder_not_active matches expected English value`() {
+        assertEquals("No active recording.", context.getString(R.string.transient_snackbar_recorder_not_active))
     }
 
     @Test
-    fun `tier1_recorder_no_output matches expected English value`() {
+    fun `transient_snackbar_recorder_no_output matches expected English value`() {
         assertEquals(
             "No output file for the recording.",
-            context.getString(R.string.tier1_recorder_no_output)
+            context.getString(R.string.transient_snackbar_recorder_no_output)
         )
     }
 
     @Test
-    fun `tier1_recorder_start_failed matches expected English value`() {
+    fun `transient_snackbar_recorder_start_failed matches expected English value`() {
         assertEquals(
             "Couldn't start the recording. Please try again.",
-            context.getString(R.string.tier1_recorder_start_failed)
+            context.getString(R.string.transient_snackbar_recorder_start_failed)
         )
     }
 
     @Test
-    fun `tier1_recorder_stop_failed matches expected English value`() {
+    fun `transient_snackbar_recorder_stop_failed matches expected English value`() {
         assertEquals(
             "Couldn't stop the recording. Please try again.",
-            context.getString(R.string.tier1_recorder_stop_failed)
+            context.getString(R.string.transient_snackbar_recorder_stop_failed)
         )
     }
 
     @Test
-    fun `tier1_empty_audio_file matches expected English value`() {
+    fun `transient_snackbar_empty_audio_file matches expected English value`() {
         assertEquals(
             "The audio file is empty. Please record again.",
-            context.getString(R.string.tier1_empty_audio_file)
+            context.getString(R.string.transient_snackbar_empty_audio_file)
         )
     }
 
     @Test
-    fun `tier1_empty_conversation_history matches expected English value`() {
+    fun `transient_snackbar_empty_conversation_history matches expected English value`() {
         assertEquals(
             "Start a conversation first.",
-            context.getString(R.string.tier1_empty_conversation_history)
+            context.getString(R.string.transient_snackbar_empty_conversation_history)
         )
     }
 
     @Test
-    fun `tier1_streaming_failed matches expected English value`() {
+    fun `transient_snackbar_streaming_failed matches expected English value`() {
         assertEquals(
             "The reply stream was interrupted. Please try again.",
-            context.getString(R.string.tier1_streaming_failed)
+            context.getString(R.string.transient_snackbar_streaming_failed)
         )
     }
 
     @Test
-    fun `tier1_unexpected_failure matches expected English value`() {
+    fun `transient_snackbar_unexpected_failure matches expected English value`() {
         assertEquals(
             "Something went wrong. Please try again.",
-            context.getString(R.string.tier1_unexpected_failure)
+            context.getString(R.string.transient_snackbar_unexpected_failure)
+        )
+    }
+
+    @Test
+    fun `transient_snackbar_tts_unavailable matches expected English value`() {
+        assertEquals(
+            "Read aloud isn't available on this device.",
+            context.getString(R.string.transient_snackbar_tts_unavailable)
         )
     }
 

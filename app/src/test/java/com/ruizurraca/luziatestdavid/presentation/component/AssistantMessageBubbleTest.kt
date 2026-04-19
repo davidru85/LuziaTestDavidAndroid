@@ -8,11 +8,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import com.ruizurraca.luziatestdavid.presentation.model.AssistantStreamState
 import com.ruizurraca.luziatestdavid.presentation.model.ChatMessageUiModel
 import com.ruizurraca.luziatestdavid.presentation.theme.LuziaTheme
-import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,11 +35,11 @@ class AssistantMessageBubbleTest {
 
     private fun setBubble(
         model: ChatMessageUiModel.Assistant,
-        onRetry: (() -> Unit)? = null
+        isRetryable: Boolean = false
     ) {
         composeTestRule.setContent {
             LuziaTheme {
-                AssistantMessageBubble(model = model, onRetry = onRetry)
+                AssistantMessageBubble(model = model, isRetryable = isRetryable)
             }
         }
     }
@@ -101,86 +99,43 @@ class AssistantMessageBubbleTest {
         composeTestRule.onNodeWithContentDescription("Loading response").assertDoesNotExist()
     }
 
-    // ----- Retry button (Phase 5.5.G, MEMORY.md Fork 2) -----------------------
+    // region Phase 10.6.A — retry affordance lives OUTSIDE the bubble
 
     @Test
-    fun failed_withOnRetry_showsRetryButton() {
+    fun failed_retryable_doesNotRenderRetryButtonInsideBubble() {
+        // The retry action moved out of the bubble in 10.6.A — the bubble must
+        // NEVER host the retry control, regardless of the retryable flag.
         setBubble(
             model = assistant(streamState = AssistantStreamState.FAILED),
-            onRetry = {}
+            isRetryable = true
         )
 
-        composeTestRule.onNodeWithContentDescription("Retry reply").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Retry reply").assertDoesNotExist()
     }
 
     @Test
-    fun failed_withoutOnRetry_hidesRetryButton() {
+    fun failed_nonRetryable_doesNotRenderRetryButtonInsideBubble() {
         setBubble(
             model = assistant(streamState = AssistantStreamState.FAILED),
-            onRetry = null
+            isRetryable = false
         )
 
-        composeTestRule.onNodeWithContentDescription("Retry reply").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Retry reply").assertDoesNotExist()
     }
 
-    @Test
-    fun received_withOnRetry_hidesRetryButton() {
-        setBubble(
-            model = assistant(
-                content = "Hola",
-                streamState = AssistantStreamState.RECEIVED
-            ),
-            onRetry = {}
-        )
+    // endregion
 
-        composeTestRule.onNodeWithContentDescription("Retry reply").assertDoesNotExist()
-    }
+    // region Phase 7.3.3.B — FAILED bubble friendly copy (retryable vs older)
 
     @Test
-    fun loading_withOnRetry_hidesRetryButton() {
-        setBubble(
-            model = assistant(streamState = AssistantStreamState.LOADING),
-            onRetry = {}
-        )
-
-        composeTestRule.onNodeWithContentDescription("Retry reply").assertDoesNotExist()
-    }
-
-    @Test
-    fun streaming_withOnRetry_hidesRetryButton() {
-        setBubble(
-            model = assistant(
-                content = "partial",
-                streamState = AssistantStreamState.STREAMING
-            ),
-            onRetry = {}
-        )
-
-        composeTestRule.onNodeWithContentDescription("Retry reply").assertDoesNotExist()
-    }
-
-    @Test
-    fun clickingRetry_invokesCallback_once() {
-        var retries = 0
+    fun failed_retryable_showsGoneBlankCopy() {
+        // The LATEST failed assistant turn is retryable — show the "gone blank"
+        // prompt that invites the user to tap retry (the button is now rendered
+        // below the bubble by ChatScreenContent, but the bubble copy still
+        // reflects the retryable intent).
         setBubble(
             model = assistant(streamState = AssistantStreamState.FAILED),
-            onRetry = { retries++ }
-        )
-
-        composeTestRule.onNodeWithContentDescription("Retry reply").performClick()
-
-        assertEquals(1, retries)
-    }
-
-    // region Phase 7.3.3.B — FAILED bubble friendly copy (latest vs older)
-
-    @Test
-    fun failed_withOnRetry_showsGoneBlankCopy() {
-        // The LATEST failed assistant turn is retryable — show the "gone blank" prompt
-        // that invites the user to tap retry.
-        setBubble(
-            model = assistant(streamState = AssistantStreamState.FAILED),
-            onRetry = {}
+            isRetryable = true
         )
 
         composeTestRule.onNodeWithText("I've gone blank. Mind retrying?").assertIsDisplayed()
@@ -188,11 +143,12 @@ class AssistantMessageBubbleTest {
     }
 
     @Test
-    fun failed_withoutOnRetry_showsEmptyMessageCopy() {
-        // Older failed assistant turns aren't retryable — show the apologetic copy only.
+    fun failed_nonRetryable_showsEmptyMessageCopy() {
+        // Older failed assistant turns aren't retryable — show the apologetic
+        // copy only.
         setBubble(
             model = assistant(streamState = AssistantStreamState.FAILED),
-            onRetry = null
+            isRetryable = false
         )
 
         composeTestRule.onNodeWithText("Sorry, empty message").assertIsDisplayed()
@@ -205,8 +161,6 @@ class AssistantMessageBubbleTest {
 
     @Test
     fun loading_bubble_marksLiveRegionPolite_forTalkBack() {
-        // When the shimmer appears, TalkBack should announce "Loading response"
-        // so the user knows the reply is being generated.
         setBubble(assistant(streamState = AssistantStreamState.LOADING))
 
         composeTestRule
@@ -216,7 +170,6 @@ class AssistantMessageBubbleTest {
 
     @Test
     fun streaming_textBubble_marksLiveRegionPolite_forTalkBack() {
-        // While tokens stream in, TalkBack should announce each content update.
         setBubble(
             assistant(
                 content = "La fotosíntesis es",
@@ -231,8 +184,6 @@ class AssistantMessageBubbleTest {
 
     @Test
     fun received_textBubble_doesNotMarkLiveRegion() {
-        // Historical RECEIVED messages shouldn't be re-announced by TalkBack when
-        // the user scrolls them back into view.
         setBubble(
             assistant(
                 content = "La fotosíntesis es el proceso por el cual las plantas convierten la luz solar en energía.",
@@ -247,7 +198,7 @@ class AssistantMessageBubbleTest {
 
     @Test
     fun failed_bubble_doesNotMarkLiveRegion() {
-        setBubble(assistant(streamState = AssistantStreamState.FAILED), onRetry = {})
+        setBubble(assistant(streamState = AssistantStreamState.FAILED), isRetryable = true)
 
         composeTestRule
             .onAllNodes(isPoliteLiveRegion())

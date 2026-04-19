@@ -209,3 +209,101 @@ User-surfaced UX suggestions + design decisions for Phase 7.3.3 (UI/UX Improveme
 ### Risks flagged
 
 **`role_prompts` translation risk:** `role_prompts` strings are sent to the backend as the per-user-message `role_prompt` that steers the LLM (per Fork 4). Translating them changes the language of the system prompt delivered to the upstream model. In practice most chat LLMs reply in the user's message language regardless of system-prompt language, but quality can shift subtly. **Mitigation:** if reply quality regresses for Spanish / Portuguese users after 7.3.3.F, revert the specific `role_prompts` subset back to English without touching the rest of the translation set.
+
+---
+
+## Phase 10 — Golden Rules Revision (2026-04-19)
+
+### Fork 6 — Output-side TTS carve-out on Rules #1 and #6
+
+The original Golden Rules prohibited **all** local ASR/TTS and **all** audio controls in the message list. During Phase 10 polish planning the user requested a "read aloud" affordance on assistant replies (surfaced on the most recent received message). Rather than reject the feature or bolt on a workaround, Rules #1 and #6 were narrowed to reflect the actual architectural concern (no local audio processing on the **input** path) and permit a specific, bounded output-side affordance.
+
+**Architectural invariant preserved (unchanged):**
+*   No local STT / ASR — user audio continues to be captured raw and sent to the backend for Whisper transcription.
+*   No third-party TTS engines (e.g., bundled ML models, cloud TTS SDKs from other vendors).
+*   No automatic or background playback — the user must initiate each read-aloud via an explicit tap.
+
+**Newly permitted:**
+*   Android system `TextToSpeech` (`android.speech.tts.TextToSpeech`) invoked on assistant replies on user demand, via a single icon-button affordance.
+*   Placement of the affordance is a UX decision (ROADMAP 10.6.D currently scopes it to the last received assistant message only).
+
+**Why the narrowing — not a full relaxation:** the original rules were load-bearing against two classes of scope creep: (a) duplicating backend Whisper responsibilities on-device (input path), and (b) turning the text-only chat into a media-app with waveforms, scrubbers, and playback controls for recorded audio (output path). Narrowing Rule #1 to the input path keeps (a) intact; narrowing Rule #6 to "no playback of *recorded* audio" keeps (b) intact while allowing synthetic speech rendered from already-rendered text.
+
+Impacted specs: `CONTEXT.md §Golden Rules #1, #6`.
+Implementation: tracked as ROADMAP 10.6.D.
+
+---
+
+## Phase 10.6 — Chat UX Layout Decisions (2026-04-19)
+
+Three coupled refinements that landed across 10.6.A / 10.6.B / 10.6.C, together reshaping how the chat screen composes its chrome, message list, and input bar.
+
+### 10.6.A — Retry affordance relocated below the bubble
+
+*   `AssistantMessageBubble` no longer hosts the retry button. Its `onRetry: (() -> Unit)?` parameter was replaced by `isRetryable: Boolean`, used only to select the 7.3.3.B friendly-copy variant. The bubble itself stays decoupled from the retry callback.
+*   New `RetryAssistantReplyButton` composable — a `TextButton` with `Refresh` icon + `"Retry reply"` label — is rendered beneath the latest FAILED assistant row by `ChatScreenContent`, inside a `Column(verticalArrangement = spacedBy(4.dp))` that stacks bubble + button.
+*   **Why:** the in-bubble IconButton got visually cramped under longer-text locales (confirmed in Spanish, where `"Reintentar respuesta"` vied with the body copy for horizontal room).
+
+### 10.6.B — Sticky top chrome + bottom-anchored message list
+
+`ChatScreenContent` restructured into three zones: topBar (chrome stack) / LazyColumn (messages) / bottomBar (input). The final shape came after two failed device-verification attempts — the learnings are load-bearing for future Compose layout work.
+
+**Final shape:**
+*   `ChatTopAppBar` + `RoleSelectorChips` stacked inside `Scaffold.topBar`. Both stay pinned when the IME opens — previously the role selector sat in the content area and could get squeezed out.
+*   LazyColumn uses natural (chronological) item order + `verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Bottom)` for short-list bottom-anchoring + `LaunchedEffect(state.messages.size) { listState.scrollToItem(lastIndex) }` to keep the newest message visible as the list grows.
+*   `AndroidManifest.xml` gained `android:windowSoftInputMode="adjustResize"` on `MainActivity`.
+*   `ChatInputBar` inside `Scaffold.bottomBar` applies `Modifier.imePadding()` so it anchors above the IME.
+
+**Two prior attempts that failed device verification (recorded so the mistakes aren't repeated):**
+1.  **`LazyColumn(reverseLayout = true)` + `state.messages.asReversed()` + default `Arrangement.spacedBy(6.dp)` (Alignment.Top)** — Compose docs state explicitly that `reverseLayout` does not change `verticalArrangement` alignment. The default-Top alignment on `spacedBy` overrode the bottom-anchor that `reverseLayout`'s default `Arrangement.Bottom` would have provided. Robolectric's long-list test passed because viewport composition is independent of short-list anchoring — the failure only surfaced on device with a short conversation. User flagged via [`issues/messages_at_top.png`](issues/messages_at_top.png).
+2.  **Missing `android:windowSoftInputMode`** — without an explicit `adjustResize`, API 30 + `enableEdgeToEdge()` fell back to `adjustPan` on the LG LM-G900, which panned the entire window up when the IME opened and pushed the `topBar` above the screen. User flagged via [`issues/hidden_top_bar.png`](issues/hidden_top_bar.png).
+3.  **Third-pass learning — `adjustResize` alone wasn't enough.** With `enableEdgeToEdge()` on API 30+, `adjustResize` no longer physically resizes the window; the IME is reported as `WindowInsets.ime` instead. Scaffold's default `contentWindowInsets` does not include IME, so `bottomBar` doesn't auto-push above the keyboard. `Modifier.imePadding()` on the input bar is the canonical fix.
+
+### 10.6.C — Auto-expanding input field (1 → 4 lines)
+
+*   `ChatInputBar` replaced `BottomAppBar { Row(…) }` with `Surface(color = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 3.dp) { Row(verticalAlignment = Alignment.Bottom, …) }`. **`BottomAppBar`'s fixed `.height(BottomAppBarDefaults.ContainerHeight = 80.dp)` internal clamp defeated any `maxLines` cap on the TextField** — the ROADMAP-predicted "one-line fix via `maxLines = 4`" turned out to require a parent-container rewrite. The `Surface + Row` replacement preserves the M3 visual (same tonal colour + 3 dp elevation) while lifting the clamp.
+*   `OutlinedTextField` got `minLines = 1, maxLines = 4` so it grows line-by-line with typed content and scrolls internally past four lines.
+*   The placeholder `Text` got `maxLines = 1` + `TextOverflow.Ellipsis`. Without this, the Spanish placeholder copy `"Escribe un mensaje o toca el micro…"` wrapped to 2 lines on narrow phone widths, driving the empty field to render at 2-line height and defeating the compact empty-state intent. Surfaced during device verification after the first two changes shipped.
+
+### Cross-cutting learning
+
+All three phases exposed a single broader pattern: **Robolectric + Compose unit tests cannot reliably validate visual-layout anchoring, IME behaviour, or parent-container clamping interactions.** Tests that passed in the harness still produced broken UI on the device. Recorded in the auto-memory `ui_tasks_device_verification.md`: for any task touching `LazyColumn` anchoring, `Arrangement` alignments, `Modifier.imePadding` / `WindowInsets.ime`, `android:windowSoftInputMode`, Scaffold chrome placement, or parent height-clamping composables (`BottomAppBar`, etc.), device verification is mandatory before marking the task complete.
+
+### 10.6.D — On-demand TTS on the last received assistant message (2026-04-19)
+
+First output-side audio feature in the project, landing behind the Phase 10 Fork 6 Golden Rules narrowing. The architecture mirrors the existing `AudioRecorder` pattern deliberately so the codebase keeps one shape for all audio-adjacent lifecycle (capture on input, synthesize on output).
+
+**Domain shape — `TextSpeaker` (`domain/audio/`):**
+
+```kotlin
+interface TextSpeaker {
+    suspend fun speak(text: String, locale: Locale): Resource<Unit>
+    fun stop()
+    fun release()
+}
+```
+
+*   `speak` is a suspending fire-and-await: it completes when the utterance plays through (via `UtteranceProgressListener.onDone`), when the coroutine is cancelled, or when the engine fails. `Locale` is `java.util.Locale` (pure JVM — no Android import, domain purity preserved).
+*   `stop` and `release` mirror `AudioRecorder.release()` — synchronous, idempotent, safe from `onCleared`.
+
+**Locale resolution — passed from caller, not derived in VM.** The ViewModel takes `Locale` as a parameter on `onTtsTap(messageId, text, locale)` rather than reading `Locale.getDefault()` internally. `ChatScreen` resolves it via `LocalConfiguration.current.locales[0]` so in-app locale changes (values-es/-pt resources) track correctly. This keeps the VM unit-testable without a Locale provider and isolates Android `Configuration` to the composable boundary.
+
+**Playback lifecycle in `ChatViewModel`:**
+*   `currentlySpeakingId: StateFlow<String?>` — consumed by `ChatScreenContent` to swap the `TtsPlayButton` icon between `VolumeUp` and `Stop`.
+*   Internal `speakJob: Job?` holds the current playback coroutine. On retap of the same message: cancel + `textSpeaker.stop()` + clear ID. On tap of a different message while one is playing: cancel + stop + switch — never parallel playback.
+*   `onCleared()` releases both `audioRecorder` and `textSpeaker` (extended the Phase 7.4.B lifecycle widening).
+
+**`AndroidTextSpeaker` adapter (`data/local/audio/`):**
+*   Async init via `TextToSpeech`'s `OnInitListener`, bridged to coroutines through `suspendCancellableCoroutine`. A `Mutex` guards the init-state machine (`NotInitialised` → `Ready` / `Failed` / `Released`) so concurrent `speak()` calls during first-use don't race the engine constructor.
+*   Per-utterance flow: set language, register a fresh `UtteranceProgressListener` keyed by a `UUID` utterance id, call `tts.speak(..., QUEUE_FLUSH, ...)`. `onDone` → `Resource.Success`; `onError(id, errorCode)` → `AppError.TtsUnavailable.toResourceError()`. `invokeOnCancellation` calls `engine.stop()` so job cancellation aborts playback immediately.
+*   `setLanguage` return codes `LANG_MISSING_DATA` / `LANG_NOT_SUPPORTED` short-circuit to `TtsUnavailable` before enqueueing.
+*   **No unit tests on the adapter — same convention as `MediaRecorderAudioRecorder`.** Framework types are hard to harness; correctness is verified on-device. Recorded so future work follows the same split (thin framework adapters = device-only verification; the `TextSpeaker` domain contract and VM wiring carry the unit-test load).
+
+**UI placement rule (`ChatScreenContent`):** the `TtsPlayButton` renders beneath an assistant row **iff** `message.id == lastAssistantId && message.streamState == AssistantStreamState.RECEIVED`. Gated on *both* conditions deliberately:
+*   The `== lastAssistantId` check prevents the button appearing on older RECEIVED replies (UX intent: read-aloud only on the latest turn).
+*   The `== RECEIVED` check prevents the button flashing during LOADING / STREAMING / FAILED states.
+If the last assistant row is LOADING, no row gets the button — not even older RECEIVED ones. Pinned by `olderReceivedAssistantWhenLatestIsLoading_noButtonOnAnyRow` in `ChatScreenContentTest`.
+
+**Error routing:** `AppError.TtsUnavailable` is a `data object` (not `data class`) because the error carries no backend message — it's a local-origin failure. Routes through `Tier1Kind.TtsUnavailable` → `R.string.tier1_tts_unavailable` ("Read aloud isn't available on this device." / "La lectura en voz alta no está disponible en este dispositivo." / "A leitura em voz alta não está disponível neste dispositivo."). Tier-1 Snackbar, auto-dismissing — matches the UX grade of a missing-capability affordance.
+
+**A11y pinning:** `cd_tts_play` / `cd_tts_stop` / `tier1_tts_unavailable` pinned byte-for-byte in `A11yStringMigrationTest` (en) + `EsTest` + `PtTest`. +9 assertions.

@@ -10,23 +10,24 @@ import org.junit.jupiter.api.Test
  * Contract tests for `AppError.toChatEvent()`: routes each domain error variant
  * to its tier-appropriate UI event per `TECHNICAL_SPEC.md §Error Handling`.
  *
- * Phase 7.3.3.H.2: Tier-1 events no longer carry a pre-resolved `message`
- * String. They carry a semantic [Tier1Kind] (the composable resolves copy via
- * stringResource) plus an optional `backendMessage` that preempts the translated
- * copy whenever the backend supplied something specific (option iii). Tier-3
- * events continue the same pattern with [Tier3Kind] + `detailsMessage`.
+ * Phase 7.3.3.H.2: transient-snackbar events no longer carry a pre-resolved
+ * `message` String. They carry a semantic [TransientSnackbarKind] (the
+ * composable resolves copy via stringResource) plus an optional
+ * `backendMessage` that preempts the translated copy whenever the backend
+ * supplied something specific (option iii). Blocking-error-dialog events
+ * continue the same pattern with [BlockingErrorDialogKind] + `detailsMessage`.
  */
 class AppErrorToChatEventTest {
 
-    // region Tier-1 backend-facing variants — kind + optional backendMessage
+    // region TransientSnackbar — backend-facing variants (kind + optional backendMessage)
 
     @Test
-    fun `BadRequest default maps to Tier1 with BadRequest kind and null backendMessage`() {
+    fun `BadRequest default maps to TransientSnackbar with BadRequest kind and null backendMessage`() {
         val event = AppError.BadRequest().toChatEvent()
 
-        val tier1 = event as ChatEvent.Tier1
-        assertEquals(Tier1Kind.BadRequest, tier1.kind)
-        assertNull(tier1.backendMessage)
+        val snackbar = event as ChatEvent.TransientSnackbar
+        assertEquals(TransientSnackbarKind.BadRequest, snackbar.kind)
+        assertNull(snackbar.backendMessage)
     }
 
     @Test
@@ -34,149 +35,158 @@ class AppErrorToChatEventTest {
         val backendMessage = "Audio file is empty or too short to transcribe."
         val event = AppError.BadRequest(rawMessage = backendMessage).toChatEvent()
 
-        val tier1 = event as ChatEvent.Tier1
-        assertEquals(Tier1Kind.BadRequest, tier1.kind)
-        assertEquals(backendMessage, tier1.backendMessage)
+        val snackbar = event as ChatEvent.TransientSnackbar
+        assertEquals(TransientSnackbarKind.BadRequest, snackbar.kind)
+        assertEquals(backendMessage, snackbar.backendMessage)
     }
 
     @Test
-    fun `FileTooLarge maps to Tier1 with FileTooLarge kind`() {
+    fun `FileTooLarge maps to TransientSnackbar with FileTooLarge kind`() {
         val event = AppError.FileTooLarge().toChatEvent()
 
-        assertTrue(event is ChatEvent.Tier1)
-        assertEquals(Tier1Kind.FileTooLarge, (event as ChatEvent.Tier1).kind)
+        assertTrue(event is ChatEvent.TransientSnackbar)
+        assertEquals(TransientSnackbarKind.FileTooLarge, (event as ChatEvent.TransientSnackbar).kind)
     }
 
     @Test
-    fun `Timeout maps to Tier1 with Timeout kind`() {
+    fun `Timeout maps to TransientSnackbar with Timeout kind`() {
         val event = AppError.Timeout().toChatEvent()
 
-        assertTrue(event is ChatEvent.Tier1)
-        assertEquals(Tier1Kind.Timeout, (event as ChatEvent.Tier1).kind)
+        assertTrue(event is ChatEvent.TransientSnackbar)
+        assertEquals(TransientSnackbarKind.Timeout, (event as ChatEvent.TransientSnackbar).kind)
     }
 
     @Test
-    fun `Network maps to Tier1 with Network kind`() {
+    fun `Network maps to TransientSnackbar with Network kind`() {
         val event = AppError.Network().toChatEvent()
 
-        assertTrue(event is ChatEvent.Tier1)
-        assertEquals(Tier1Kind.Network, (event as ChatEvent.Tier1).kind)
+        assertTrue(event is ChatEvent.TransientSnackbar)
+        assertEquals(TransientSnackbarKind.Network, (event as ChatEvent.TransientSnackbar).kind)
     }
 
     @Test
-    fun `ValidationError maps to Tier1 preserving backend message`() {
+    fun `ValidationError maps to TransientSnackbar preserving backend message`() {
         val backendMessage = "user messages must include role_prompt."
         val event = AppError.ValidationError(rawMessage = backendMessage).toChatEvent()
 
-        val tier1 = event as ChatEvent.Tier1
-        assertEquals(Tier1Kind.ValidationError, tier1.kind)
-        assertEquals(backendMessage, tier1.backendMessage)
+        val snackbar = event as ChatEvent.TransientSnackbar
+        assertEquals(TransientSnackbarKind.ValidationError, snackbar.kind)
+        assertEquals(backendMessage, snackbar.backendMessage)
     }
 
     // endregion
 
-    // region Tier-1 local variants — never carry a backendMessage
+    // region TransientSnackbar — local variants (never carry a backendMessage)
 
     @Test
-    fun `RecorderAlreadyRunning maps to Tier1 RecorderAlreadyRunning kind with no backendMessage`() {
+    fun `RecorderAlreadyRunning maps to TransientSnackbar with RecorderAlreadyRunning kind and no backendMessage`() {
         val event = AppError.RecorderAlreadyRunning.toChatEvent()
 
-        val tier1 = event as ChatEvent.Tier1
-        assertEquals(Tier1Kind.RecorderAlreadyRunning, tier1.kind)
-        assertNull(tier1.backendMessage)
+        val snackbar = event as ChatEvent.TransientSnackbar
+        assertEquals(TransientSnackbarKind.RecorderAlreadyRunning, snackbar.kind)
+        assertNull(snackbar.backendMessage)
     }
 
     @Test
-    fun `RecorderNotActive maps to Tier1 RecorderNotActive kind`() {
+    fun `RecorderNotActive maps to TransientSnackbar with RecorderNotActive kind`() {
         val event = AppError.RecorderNotActive.toChatEvent()
-        assertEquals(Tier1Kind.RecorderNotActive, (event as ChatEvent.Tier1).kind)
+        assertEquals(TransientSnackbarKind.RecorderNotActive, (event as ChatEvent.TransientSnackbar).kind)
     }
 
     @Test
-    fun `RecorderNoOutputFile maps to Tier1 RecorderNoOutputFile kind`() {
+    fun `RecorderNoOutputFile maps to TransientSnackbar with RecorderNoOutputFile kind`() {
         val event = AppError.RecorderNoOutputFile.toChatEvent()
-        assertEquals(Tier1Kind.RecorderNoOutputFile, (event as ChatEvent.Tier1).kind)
+        assertEquals(TransientSnackbarKind.RecorderNoOutputFile, (event as ChatEvent.TransientSnackbar).kind)
     }
 
     @Test
-    fun `RecorderStartFailed maps to Tier1 RecorderStartFailed kind`() {
+    fun `RecorderStartFailed maps to TransientSnackbar with RecorderStartFailed kind`() {
         val event = AppError.RecorderStartFailed.toChatEvent()
-        assertEquals(Tier1Kind.RecorderStartFailed, (event as ChatEvent.Tier1).kind)
+        assertEquals(TransientSnackbarKind.RecorderStartFailed, (event as ChatEvent.TransientSnackbar).kind)
     }
 
     @Test
-    fun `RecorderStopFailed maps to Tier1 RecorderStopFailed kind`() {
+    fun `RecorderStopFailed maps to TransientSnackbar with RecorderStopFailed kind`() {
         val event = AppError.RecorderStopFailed.toChatEvent()
-        assertEquals(Tier1Kind.RecorderStopFailed, (event as ChatEvent.Tier1).kind)
+        assertEquals(TransientSnackbarKind.RecorderStopFailed, (event as ChatEvent.TransientSnackbar).kind)
     }
 
     @Test
-    fun `EmptyAudioFile maps to Tier1 EmptyAudioFile kind`() {
+    fun `EmptyAudioFile maps to TransientSnackbar with EmptyAudioFile kind`() {
         val event = AppError.EmptyAudioFile.toChatEvent()
-        assertEquals(Tier1Kind.EmptyAudioFile, (event as ChatEvent.Tier1).kind)
+        assertEquals(TransientSnackbarKind.EmptyAudioFile, (event as ChatEvent.TransientSnackbar).kind)
     }
 
     @Test
-    fun `EmptyConversationHistory maps to Tier1 EmptyConversationHistory kind`() {
+    fun `EmptyConversationHistory maps to TransientSnackbar with EmptyConversationHistory kind`() {
         val event = AppError.EmptyConversationHistory.toChatEvent()
-        assertEquals(Tier1Kind.EmptyConversationHistory, (event as ChatEvent.Tier1).kind)
+        assertEquals(TransientSnackbarKind.EmptyConversationHistory, (event as ChatEvent.TransientSnackbar).kind)
     }
 
     @Test
-    fun `StreamingFailed maps to Tier1 StreamingFailed kind`() {
+    fun `StreamingFailed maps to TransientSnackbar with StreamingFailed kind`() {
         val event = AppError.StreamingFailed.toChatEvent()
-        assertEquals(Tier1Kind.StreamingFailed, (event as ChatEvent.Tier1).kind)
+        assertEquals(TransientSnackbarKind.StreamingFailed, (event as ChatEvent.TransientSnackbar).kind)
     }
 
     @Test
-    fun `UnexpectedFailure maps to Tier1 UnexpectedFailure kind`() {
+    fun `UnexpectedFailure maps to TransientSnackbar with UnexpectedFailure kind`() {
         val event = AppError.UnexpectedFailure.toChatEvent()
-        assertEquals(Tier1Kind.UnexpectedFailure, (event as ChatEvent.Tier1).kind)
+        assertEquals(TransientSnackbarKind.UnexpectedFailure, (event as ChatEvent.TransientSnackbar).kind)
+    }
+
+    @Test
+    fun `TtsUnavailable maps to TransientSnackbar with TtsUnavailable kind and no backendMessage`() {
+        val event = AppError.TtsUnavailable.toChatEvent()
+
+        val snackbar = event as ChatEvent.TransientSnackbar
+        assertEquals(TransientSnackbarKind.TtsUnavailable, snackbar.kind)
+        assertNull(snackbar.backendMessage)
     }
 
     // endregion
 
-    // region Tier-3 — kind + detailsMessage (unchanged from 7.3.3.C)
+    // region BlockingErrorDialog — kind + detailsMessage (unchanged from 7.3.3.C)
 
     @Test
-    fun `ServiceUnavailable maps to Tier3 with ServiceUnavailable kind and backend detailsMessage`() {
+    fun `ServiceUnavailable maps to BlockingErrorDialog with ServiceUnavailable kind and backend detailsMessage`() {
         val error = AppError.ServiceUnavailable()
         val event = error.toChatEvent()
 
-        val tier3 = event as ChatEvent.Tier3
-        assertEquals(Tier3Kind.ServiceUnavailable, tier3.kind)
-        assertEquals(error.message, tier3.detailsMessage)
+        val blockingError = event as ChatEvent.BlockingErrorDialog
+        assertEquals(BlockingErrorDialogKind.ServiceUnavailable, blockingError.kind)
+        assertEquals(error.message, blockingError.detailsMessage)
     }
 
     @Test
-    fun `Internal maps to Tier3 with InternalError kind`() {
+    fun `Internal maps to BlockingErrorDialog with InternalError kind`() {
         val event = AppError.Internal().toChatEvent()
 
-        assertTrue(event is ChatEvent.Tier3)
-        assertEquals(Tier3Kind.InternalError, (event as ChatEvent.Tier3).kind)
+        assertTrue(event is ChatEvent.BlockingErrorDialog)
+        assertEquals(BlockingErrorDialogKind.InternalError, (event as ChatEvent.BlockingErrorDialog).kind)
     }
 
     @Test
-    fun `Internal with backend-supplied message maps to Tier3 preserving that message as detailsMessage`() {
+    fun `Internal with backend-supplied message maps to BlockingErrorDialog preserving that message as detailsMessage`() {
         val backendMessage = "Transcription service failed. Please try again."
         val error = AppError.Internal(rawMessage = backendMessage)
 
         val event = error.toChatEvent()
 
-        val tier3 = event as ChatEvent.Tier3
-        assertEquals(Tier3Kind.InternalError, tier3.kind)
-        assertEquals(backendMessage, tier3.detailsMessage)
+        val blockingError = event as ChatEvent.BlockingErrorDialog
+        assertEquals(BlockingErrorDialogKind.InternalError, blockingError.kind)
+        assertEquals(backendMessage, blockingError.detailsMessage)
     }
 
     @Test
-    fun `Unknown maps to Tier3 with Unexpected kind and preserved raw message as detailsMessage`() {
+    fun `Unknown maps to BlockingErrorDialog with Unexpected kind and preserved raw message as detailsMessage`() {
         val unknown = AppError.Unknown(rawCode = "STRANGE_XYZ", rawMessage = "something weird")
 
         val event = unknown.toChatEvent()
 
-        val tier3 = event as ChatEvent.Tier3
-        assertEquals(Tier3Kind.Unexpected, tier3.kind)
-        assertEquals("something weird", tier3.detailsMessage)
+        val blockingError = event as ChatEvent.BlockingErrorDialog
+        assertEquals(BlockingErrorDialogKind.Unexpected, blockingError.kind)
+        assertEquals("something weird", blockingError.detailsMessage)
     }
 
     // endregion

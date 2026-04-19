@@ -16,8 +16,8 @@ import javax.inject.Singleton
 
 @Singleton
 class MediaRecorderAudioRecorder @Inject constructor(
-    @ApplicationContext private val context: Context,
-    @MainDispatcher private val mainDispatcher: CoroutineDispatcher
+    @param:ApplicationContext private val context: Context,
+    @param:MainDispatcher private val mainDispatcher: CoroutineDispatcher
 ) : AudioRecorder {
 
     private var currentRecorder: MediaRecorder? = null

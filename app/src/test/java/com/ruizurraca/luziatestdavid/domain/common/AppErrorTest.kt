@@ -117,14 +117,14 @@ class AppErrorTest {
         val error: AppError = AppError.Network()
 
         val label: String = when (error) {
-            is AppError.BadRequest -> "tier1"
-            is AppError.FileTooLarge -> "tier1"
-            is AppError.Timeout -> "tier2"
-            is AppError.Network -> "tier2"
-            is AppError.ServiceUnavailable -> "tier3"
-            is AppError.Internal -> "tier3"
-            is AppError.ValidationError -> "tier1"
-            is AppError.Unknown -> "tier3"
+            is AppError.BadRequest -> "snackbar"
+            is AppError.FileTooLarge -> "snackbar"
+            is AppError.Timeout -> "inline"
+            is AppError.Network -> "inline"
+            is AppError.ServiceUnavailable -> "dialog"
+            is AppError.Internal -> "dialog"
+            is AppError.ValidationError -> "snackbar"
+            is AppError.Unknown -> "dialog"
             AppError.RecorderAlreadyRunning,
             AppError.RecorderNotActive,
             AppError.RecorderNoOutputFile,
@@ -133,10 +133,27 @@ class AppErrorTest {
             AppError.EmptyAudioFile,
             AppError.EmptyConversationHistory,
             AppError.StreamingFailed,
-            AppError.UnexpectedFailure -> "tier1"
+            AppError.UnexpectedFailure,
+            AppError.TtsUnavailable -> "snackbar"
         }
 
-        assertEquals("tier2", label)
+        assertEquals("inline", label)
+    }
+
+    @Test
+    fun `TtsUnavailable has local LOCAL_TTS_UNAVAILABLE code and dev-facing message`() {
+        val error: AppError = AppError.TtsUnavailable
+
+        assertEquals("LOCAL_TTS_UNAVAILABLE", error.code)
+        assertTrue(error.message.isNotBlank())
+    }
+
+    @Test
+    fun `TtsUnavailable toResourceError wraps error verbatim`() {
+        val resourceError = AppError.TtsUnavailable.toResourceError()
+
+        assertEquals(AppError.TtsUnavailable, resourceError.error)
+        assertEquals(AppError.TtsUnavailable.message, resourceError.message)
     }
 
     // region Backend-message preservation (Phase 7.2.A, Fork 5) — the six fixed-message variants

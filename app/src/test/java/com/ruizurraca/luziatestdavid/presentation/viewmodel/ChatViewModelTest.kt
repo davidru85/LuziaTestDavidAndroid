@@ -2,6 +2,7 @@ package com.ruizurraca.luziatestdavid.presentation.viewmodel
 
 import app.cash.turbine.test
 import com.ruizurraca.luziatestdavid.domain.audio.AudioRecorder
+import com.ruizurraca.luziatestdavid.domain.audio.TextSpeaker
 import com.ruizurraca.luziatestdavid.domain.catalog.PersonaCatalog
 import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
@@ -16,8 +17,8 @@ import com.ruizurraca.luziatestdavid.domain.usecase.TranscribeAudioUseCase
 import com.ruizurraca.luziatestdavid.presentation.state.ChatEvent
 import com.ruizurraca.luziatestdavid.presentation.state.ChatUiState
 import com.ruizurraca.luziatestdavid.presentation.state.ProcessingKind
-import com.ruizurraca.luziatestdavid.presentation.state.Tier1Kind
-import com.ruizurraca.luziatestdavid.presentation.state.Tier3Kind
+import com.ruizurraca.luziatestdavid.presentation.state.TransientSnackbarKind
+import com.ruizurraca.luziatestdavid.presentation.state.BlockingErrorDialogKind
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.util.Locale
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatViewModelTest {
@@ -52,6 +54,7 @@ class ChatViewModelTest {
     private val streamAssistantReply: StreamAssistantReplyUseCase = mockk()
     private val repository: ChatRepository = mockk()
     private val personaCatalog: PersonaCatalog = mockk()
+    private val textSpeaker: TextSpeaker = mockk(relaxed = true)
 
     private val conversation = MutableStateFlow<List<ChatMessage>>(emptyList())
 
@@ -112,7 +115,8 @@ class ChatViewModelTest {
         transcribeAudio = transcribeAudio,
         streamAssistantReply = streamAssistantReply,
         repository = repository,
-        personaCatalog = personaCatalog
+        personaCatalog = personaCatalog,
+        textSpeaker = textSpeaker
     )
 
     // ----- Initial state & observation ---------------------------------------
@@ -182,11 +186,11 @@ class ChatViewModelTest {
             vm.startRecording()
             val event = awaitItem()
             assertTrue(
-                event is ChatEvent.Tier1 &&
-                    event.kind == Tier1Kind.Unknown &&
+                event is ChatEvent.TransientSnackbar &&
+                    event.kind == TransientSnackbarKind.Unknown &&
                     event.backendMessage == "mic busy"
             ) {
-                "expected legacy-path Tier1(Unknown, backendMessage='mic busy'), got $event"
+                "expected legacy-path TransientSnackbar(Unknown, backendMessage='mic busy'), got $event"
             }
         }
 
@@ -228,11 +232,11 @@ class ChatViewModelTest {
 
             val event = awaitItem()
             assertTrue(
-                event is ChatEvent.Tier1 &&
-                    event.kind == Tier1Kind.Unknown &&
+                event is ChatEvent.TransientSnackbar &&
+                    event.kind == TransientSnackbarKind.Unknown &&
                     event.backendMessage == "transcription failed"
             ) {
-                "expected legacy-path Tier1(Unknown, backendMessage='transcription failed'), got $event"
+                "expected legacy-path TransientSnackbar(Unknown, backendMessage='transcription failed'), got $event"
             }
         }
 
@@ -304,11 +308,11 @@ class ChatViewModelTest {
 
             val event = awaitItem()
             assertTrue(
-                event is ChatEvent.Tier1 &&
-                    event.kind == Tier1Kind.Unknown &&
+                event is ChatEvent.TransientSnackbar &&
+                    event.kind == TransientSnackbarKind.Unknown &&
                     event.backendMessage == "backend down"
             ) {
-                "expected legacy-path Tier1(Unknown, backendMessage='backend down'), got $event"
+                "expected legacy-path TransientSnackbar(Unknown, backendMessage='backend down'), got $event"
             }
         }
 
@@ -316,7 +320,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `stream error carrying AppError Internal emits Tier3 event with InternalError kind`() = runTest {
+    fun `stream error carrying AppError Internal emits BlockingErrorDialog event with InternalError kind`() = runTest {
         val internalError = AppError.Internal()
         every { streamAssistantReply(any()) } returns flowOf(
             Resource.Error(
@@ -332,17 +336,17 @@ class ChatViewModelTest {
             vm.onSendTap()
 
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Tier3) { "expected ChatEvent.Tier3, got $event" }
-            val tier3 = event as ChatEvent.Tier3
-            assertEquals(Tier3Kind.InternalError, tier3.kind)
-            assertEquals(internalError.message, tier3.detailsMessage)
+            assertTrue(event is ChatEvent.BlockingErrorDialog) { "expected ChatEvent.BlockingErrorDialog, got $event" }
+            val blockingError = event as ChatEvent.BlockingErrorDialog
+            assertEquals(BlockingErrorDialogKind.InternalError, blockingError.kind)
+            assertEquals(internalError.message, blockingError.detailsMessage)
         }
 
         assertTrue(vm.state.value is ChatUiState.Idle)
     }
 
     @Test
-    fun `stream error carrying AppError BadRequest emits Tier1 event with AppError message`() = runTest {
+    fun `stream error carrying AppError BadRequest emits TransientSnackbar event with AppError message`() = runTest {
         val badRequest = AppError.BadRequest()
         every { streamAssistantReply(any()) } returns flowOf(
             Resource.Error(
@@ -358,12 +362,12 @@ class ChatViewModelTest {
             vm.onSendTap()
 
             val event = awaitItem()
-            assertTrue(event is ChatEvent.Tier1) { "expected ChatEvent.Tier1, got $event" }
-            val tier1 = event as ChatEvent.Tier1
-            assertEquals(Tier1Kind.BadRequest, tier1.kind)
+            assertTrue(event is ChatEvent.TransientSnackbar) { "expected ChatEvent.TransientSnackbar, got $event" }
+            val snackbar = event as ChatEvent.TransientSnackbar
+            assertEquals(TransientSnackbarKind.BadRequest, snackbar.kind)
             // Default BadRequest rawMessage → backendMessage is null (composable
             // resolves the translated kind copy).
-            assertNull(tier1.backendMessage)
+            assertNull(snackbar.backendMessage)
         }
     }
 
@@ -381,6 +385,110 @@ class ChatViewModelTest {
         // is destroyed while a recording is still in flight.
         vm.onCleared()
 
+        verify(exactly = 1) { audioRecorder.release() }
+    }
+
+    // endregion
+
+    // region Phase 10.6.D — TTS on last received assistant message
+
+    private val englishLocale: Locale = Locale.forLanguageTag("en-US")
+
+    @Test
+    fun `currentlySpeakingId defaults to null`() = runTest {
+        val vm = createViewModel()
+
+        assertNull(vm.currentlySpeakingId.value)
+    }
+
+    @Test
+    fun `onTtsTap on idle VM starts speaking and exposes messageId via currentlySpeakingId`() = runTest {
+        // speak() suspends indefinitely — simulates an in-flight utterance so the
+        // ID is observable while playback is active.
+        val speakGate = kotlinx.coroutines.CompletableDeferred<Resource<Unit>>()
+        coEvery { textSpeaker.speak(any(), any()) } coAnswers { speakGate.await() }
+        val vm = createViewModel()
+
+        vm.onTtsTap(messageId = "a1", text = "Hello", locale = englishLocale)
+
+        assertEquals("a1", vm.currentlySpeakingId.value)
+        coVerify(exactly = 1) { textSpeaker.speak("Hello", englishLocale) }
+        // clean up the dangling coroutine so runTest doesn't complain
+        speakGate.complete(Resource.Success(Unit))
+    }
+
+    @Test
+    fun `onTtsTap a second time on the same message stops playback and clears currentlySpeakingId`() = runTest {
+        val speakGate = kotlinx.coroutines.CompletableDeferred<Resource<Unit>>()
+        coEvery { textSpeaker.speak(any(), any()) } coAnswers { speakGate.await() }
+        val vm = createViewModel()
+        vm.onTtsTap(messageId = "a1", text = "Hello", locale = englishLocale)
+        assertEquals("a1", vm.currentlySpeakingId.value)
+
+        vm.onTtsTap(messageId = "a1", text = "Hello", locale = englishLocale)
+
+        assertNull(vm.currentlySpeakingId.value)
+        verify(atLeast = 1) { textSpeaker.stop() }
+        speakGate.complete(Resource.Success(Unit))
+    }
+
+    @Test
+    fun `onTtsTap on a different message while one is playing switches playback to the new message`() = runTest {
+        val firstGate = kotlinx.coroutines.CompletableDeferred<Resource<Unit>>()
+        val secondGate = kotlinx.coroutines.CompletableDeferred<Resource<Unit>>()
+        coEvery { textSpeaker.speak("First", any()) } coAnswers { firstGate.await() }
+        coEvery { textSpeaker.speak("Second", any()) } coAnswers { secondGate.await() }
+        val vm = createViewModel()
+        vm.onTtsTap(messageId = "a1", text = "First", locale = englishLocale)
+        assertEquals("a1", vm.currentlySpeakingId.value)
+
+        vm.onTtsTap(messageId = "a2", text = "Second", locale = englishLocale)
+
+        assertEquals("a2", vm.currentlySpeakingId.value)
+        verify(atLeast = 1) { textSpeaker.stop() }
+        coVerify(exactly = 1) { textSpeaker.speak("Second", englishLocale) }
+        firstGate.complete(Resource.Success(Unit))
+        secondGate.complete(Resource.Success(Unit))
+    }
+
+    @Test
+    fun `onTtsTap clears currentlySpeakingId when speak completes naturally`() = runTest {
+        coEvery { textSpeaker.speak(any(), any()) } returns Resource.Success(Unit)
+        val vm = createViewModel()
+
+        vm.onTtsTap(messageId = "a1", text = "Short utterance", locale = englishLocale)
+
+        assertNull(vm.currentlySpeakingId.value)
+    }
+
+    @Test
+    fun `onTtsTap emits TransientSnackbar TtsUnavailable event when speak returns TtsUnavailable error`() = runTest {
+        coEvery {
+            textSpeaker.speak(any(), any())
+        } returns AppError.TtsUnavailable.toResourceError()
+        val vm = createViewModel()
+
+        vm.events.test {
+            vm.onTtsTap(messageId = "a1", text = "Hello", locale = englishLocale)
+            val event = awaitItem()
+            assertTrue(
+                event is ChatEvent.TransientSnackbar && event.kind == TransientSnackbarKind.TtsUnavailable
+            ) {
+                "expected TransientSnackbar(TtsUnavailable), got $event"
+            }
+        }
+        assertNull(vm.currentlySpeakingId.value)
+    }
+
+    @Test
+    fun `onCleared releases the TextSpeaker alongside the AudioRecorder`() = runTest {
+        every { audioRecorder.release() } just Runs
+        every { textSpeaker.release() } just Runs
+        val vm = createViewModel()
+
+        vm.onCleared()
+
+        verify(exactly = 1) { textSpeaker.release() }
         verify(exactly = 1) { audioRecorder.release() }
     }
 

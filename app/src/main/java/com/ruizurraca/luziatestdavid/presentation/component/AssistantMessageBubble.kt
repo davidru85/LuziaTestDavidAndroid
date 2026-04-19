@@ -11,10 +11,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
@@ -38,7 +36,7 @@ import com.ruizurraca.luziatestdavid.presentation.theme.LuziaTheme
 fun AssistantMessageBubble(
     model: ChatMessageUiModel.Assistant,
     modifier: Modifier = Modifier,
-    onRetry: (() -> Unit)? = null
+    isRetryable: Boolean = false
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -49,7 +47,7 @@ fun AssistantMessageBubble(
             color = MaterialTheme.colorScheme.surfaceVariant,
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
-            AssistantBubbleContent(model = model, onRetry = onRetry)
+            AssistantBubbleContent(model = model, isRetryable = isRetryable)
         }
     }
 }
@@ -57,7 +55,7 @@ fun AssistantMessageBubble(
 @Composable
 private fun AssistantBubbleContent(
     model: ChatMessageUiModel.Assistant,
-    onRetry: (() -> Unit)?
+    isRetryable: Boolean
 ) {
     when (model.streamState) {
         AssistantStreamState.LOADING -> LoadingLines()
@@ -69,7 +67,7 @@ private fun AssistantBubbleContent(
             content = model.content,
             announceChanges = false
         )
-        AssistantStreamState.FAILED -> FailedIndicator(onRetry = onRetry)
+        AssistantStreamState.FAILED -> FailedIndicator(isRetryable = isRetryable)
     }
 }
 
@@ -111,13 +109,14 @@ private fun AssistantText(content: String, announceChanges: Boolean) {
 }
 
 @Composable
-private fun FailedIndicator(onRetry: (() -> Unit)?) {
-    val messageRes = if (onRetry != null) {
-        // Latest failure — retryable, invite the user to tap the refresh button.
+private fun FailedIndicator(isRetryable: Boolean) {
+    // Copy varies with retryability: the retryable (latest) failure invites
+    // the user to tap retry; older failures show the apologetic variant.
+    // Phase 10.6.A moved the retry *button* out of the bubble into a
+    // dedicated control rendered beneath the bubble by the caller.
+    val messageRes = if (isRetryable) {
         R.string.bubble_failed_latest_message
     } else {
-        // Older failure — no longer retryable (only the last failure routes to
-        // onRetryLastFailure), so show the apologetic variant without a retry affordance.
         R.string.bubble_failed_older_message
     }
     Row(
@@ -138,15 +137,6 @@ private fun FailedIndicator(onRetry: (() -> Unit)?) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(end = 8.dp)
         )
-        if (onRetry != null) {
-            IconButton(onClick = onRetry) {
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = stringResource(R.string.cd_retry_reply),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
     }
 }
 
@@ -183,24 +173,24 @@ private fun AssistantMessageBubblePreview_Received() {
     }
 }
 
-@Preview(showBackground = true, name = "Light — FAILED without retry")
+@Preview(showBackground = true, name = "Light — FAILED non-retryable")
 @Composable
-private fun AssistantMessageBubblePreview_FailedNoRetry() {
+private fun AssistantMessageBubblePreview_FailedNonRetryable() {
     LuziaTheme {
         AssistantMessageBubble(
             model = previewAssistant(streamState = AssistantStreamState.FAILED),
-            onRetry = null
+            isRetryable = false
         )
     }
 }
 
-@Preview(showBackground = true, name = "Light — FAILED with retry")
+@Preview(showBackground = true, name = "Light — FAILED retryable")
 @Composable
-private fun AssistantMessageBubblePreview_FailedWithRetry() {
+private fun AssistantMessageBubblePreview_FailedRetryable() {
     LuziaTheme {
         AssistantMessageBubble(
             model = previewAssistant(streamState = AssistantStreamState.FAILED),
-            onRetry = {}
+            isRetryable = true
         )
     }
 }
@@ -208,14 +198,14 @@ private fun AssistantMessageBubblePreview_FailedWithRetry() {
 @Preview(
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
-    name = "Dark — FAILED with retry"
+    name = "Dark — FAILED retryable"
 )
 @Composable
-private fun AssistantMessageBubblePreview_DarkFailedWithRetry() {
+private fun AssistantMessageBubblePreview_DarkFailedRetryable() {
     LuziaTheme {
         AssistantMessageBubble(
             model = previewAssistant(streamState = AssistantStreamState.FAILED),
-            onRetry = {}
+            isRetryable = true
         )
     }
 }

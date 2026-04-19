@@ -2,6 +2,7 @@ package com.ruizurraca.luziatestdavid.data.remote.mapper
 
 import com.ruizurraca.luziatestdavid.data.remote.dto.ChatMessageDto
 import com.ruizurraca.luziatestdavid.data.remote.dto.ChatRequestDto
+import com.ruizurraca.luziatestdavid.domain.locale.LocaleProvider
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.model.MessageRole
 import com.ruizurraca.luziatestdavid.domain.model.MessageStatus
@@ -29,7 +30,20 @@ import org.junit.jupiter.api.assertThrows
  */
 class ChatMapperTest {
 
-    private val mapper = ChatMapper()
+    /**
+     * Default mapper under test: no locale resolved. This matches the
+     * pre-v1.4.0 behaviour (`lang` absent from the wire) so the Fork 4-era
+     * tests below keep their byte-level JSON pins. The Phase 10.6.H lang
+     * passthrough tests at the bottom of the file use a mapper built via
+     * [mapperWith] with a non-null language instead.
+     */
+    private val mapper = mapperWith(lang = null)
+
+    private fun mapperWith(lang: String?): ChatMapper = ChatMapper(
+        localeProvider = object : LocaleProvider {
+            override fun currentLanguage(): String? = lang
+        }
+    )
 
     /**
      * Matches the production Json config in [NetworkModule] so encoded-JSON
@@ -357,6 +371,149 @@ class ChatMapperTest {
         assertEquals(1, dto.messages.size)
         assertEquals("user", dto.messages.single().role)
         assertEquals("", dto.messages.single().content)
+    }
+
+    // endregion
+
+    // region Phase 10.6.H — optional `lang` passthrough (API_SPEC v1.4.0)
+
+    @Test
+    fun `toRequestDto sets lang on every message when LocaleProvider returns a language`() {
+        val mapper = mapperWith(lang = "es")
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "hola", 1L, personaPrompt = tutor),
+            ChatMessage("a1", MessageRole.ASSISTANT, "respuesta", 2L),
+            ChatMessage("u2", MessageRole.USER, "otra", 3L, personaPrompt = tutor)
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals(listOf("es", "es", "es"), dto.messages.map { it.lang })
+    }
+
+    @Test
+    fun `toRequestDto emits null lang on every message when LocaleProvider returns null`() {
+        val mapper = mapperWith(lang = null)
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "hi", 1L, personaPrompt = tutor),
+            ChatMessage("a1", MessageRole.ASSISTANT, "reply", 2L)
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals(listOf<String?>(null, null), dto.messages.map { it.lang })
+    }
+
+    @Test
+    fun `toRequestDto forwards exotic language codes verbatim - no whitelist clamping`() {
+        // Pins the "no client-side normalization" invariant from TECHNICAL_SPEC
+        // §API Contracts #2. A user on a Japanese device gets "ja" on the wire,
+        // regardless of whether Luzia ships Japanese translations.
+        val mapper = mapperWith(lang = "ja")
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "こんにちは", 1L, personaPrompt = tutor)
+        )
+
+        val dto = mapper.toRequestDto(messages)
+
+        assertEquals("ja", dto.messages.single().lang)
+    }
+
+    @Test
+    fun `toRequestDto resolves lang once per request, not once per message`() {
+        // Guards against a future drift where the mapper calls LocaleProvider
+        // inside the per-message mapping loop. Resolution must happen once,
+        // applied uniformly, so every message in a single payload shares the
+        // same send-time locale (TECHNICAL_SPEC §API Contracts #2).
+        var callCount = 0
+        val mapper = ChatMapper(
+            localeProvider = object : LocaleProvider {
+                override fun currentLanguage(): String? {
+                    callCount++
+                    return "es"
+                }
+            }
+        )
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "a", 1L, personaPrompt = tutor),
+            ChatMessage("a1", MessageRole.ASSISTANT, "b", 2L),
+            ChatMessage("u2", MessageRole.USER, "c", 3L, personaPrompt = tutor),
+            ChatMessage("a2", MessageRole.ASSISTANT, "d", 4L)
+        )
+
+        mapper.toRequestDto(messages)
+
+        assertEquals(1, callCount)
+    }
+
+    @Test
+    fun `encoded JSON carries lang on every message when LocaleProvider returns a language`() {
+        val mapper = mapperWith(lang = "es")
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "¿Cómo funciona la fotosíntesis?", 1L, personaPrompt = tutor),
+            ChatMessage("a1", MessageRole.ASSISTANT, "La fotosíntesis es…", 2L),
+            ChatMessage("u2", MessageRole.USER, "Ahora escríbelo como un poema", 3L, personaPrompt = artist)
+        )
+
+        val encoded = json.encodeToString(
+            ChatRequestDto.serializer(),
+            mapper.toRequestDto(messages)
+        )
+
+        val expected = """{"messages":[""" +
+            """{"role":"user","role_prompt":"$tutor","content":"¿Cómo funciona la fotosíntesis?","lang":"es"},""" +
+            """{"role":"assistant","content":"La fotosíntesis es…","lang":"es"},""" +
+            """{"role":"user","role_prompt":"$artist","content":"Ahora escríbelo como un poema","lang":"es"}""" +
+            """]}"""
+
+        assertEquals(expected, encoded)
+    }
+
+    @Test
+    fun `encoded JSON omits lang field entirely when LocaleProvider returns null`() {
+        // `explicitNulls = false` on the NetworkModule Json (and on this test's
+        // copy) drops null fields from the serialized output. The v1.4.0
+        // contract treats an absent `lang` as "legacy" / accept-and-detect.
+        val mapper = mapperWith(lang = null)
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "hi", 1L, personaPrompt = tutor)
+        )
+
+        val encoded = json.encodeToString(
+            ChatRequestDto.serializer(),
+            mapper.toRequestDto(messages)
+        )
+
+        assertEquals(
+            """{"messages":[{"role":"user","role_prompt":"$tutor","content":"hi"}]}""",
+            encoded
+        )
+    }
+
+    @Test
+    fun `toRequestDto matches the TECHNICAL_SPEC v1_4_0 example JSON shape`() {
+        // Byte-for-byte pin against the example in TECHNICAL_SPEC §API Contracts #2
+        // after the Phase 10.6.H / API_SPEC v1.4.0 lang field was added. Mirrors
+        // the Fork 4 example-shape test above but asserts the four-field shape.
+        val mapper = mapperWith(lang = "es")
+        val messages = listOf(
+            ChatMessage("u1", MessageRole.USER, "¿Cómo funciona la fotosíntesis?", 1L, personaPrompt = tutor),
+            ChatMessage("a1", MessageRole.ASSISTANT, "La fotosíntesis es…", 2L),
+            ChatMessage("u2", MessageRole.USER, "Ahora escríbelo como un poema", 3L, personaPrompt = artist)
+        )
+
+        val encoded = json.encodeToString(
+            ChatRequestDto.serializer(),
+            mapper.toRequestDto(messages)
+        )
+
+        val expected = """{"messages":[""" +
+            """{"role":"user","role_prompt":"$tutor","content":"¿Cómo funciona la fotosíntesis?","lang":"es"},""" +
+            """{"role":"assistant","content":"La fotosíntesis es…","lang":"es"},""" +
+            """{"role":"user","role_prompt":"$artist","content":"Ahora escríbelo como un poema","lang":"es"}""" +
+            """]}"""
+
+        assertEquals(expected, encoded)
     }
 
     // endregion

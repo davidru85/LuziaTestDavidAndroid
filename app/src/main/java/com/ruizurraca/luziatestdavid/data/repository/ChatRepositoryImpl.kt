@@ -11,6 +11,7 @@ import com.ruizurraca.luziatestdavid.data.remote.sse.SseParser
 import com.ruizurraca.luziatestdavid.di.qualifier.IoDispatcher
 import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
+import com.ruizurraca.luziatestdavid.domain.locale.LocaleProvider
 import com.ruizurraca.luziatestdavid.domain.model.ChatMessage
 import com.ruizurraca.luziatestdavid.domain.repository.ChatRepository
 import kotlinx.coroutines.CancellationException
@@ -31,7 +32,8 @@ class ChatRepositoryImpl @Inject constructor(
     private val chatMapper: ChatMapper,
     private val errorMapper: ErrorMapper,
     private val dao: ChatMessageDao,
-    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
+    private val localeProvider: LocaleProvider,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ChatRepository {
 
     override suspend fun transcribeAudio(audio: File): Resource<String> =
@@ -39,7 +41,8 @@ class ChatRepositoryImpl @Inject constructor(
             try {
                 val response = apiClient.transcribe(
                     audio = audio.readBytes(),
-                    filename = audio.name
+                    filename = audio.name,
+                    lang = localeProvider.currentLanguage()
                 )
                 Resource.Success(response.text)
             } catch (cancellation: CancellationException) {
