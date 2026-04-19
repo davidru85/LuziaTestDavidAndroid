@@ -1,7 +1,9 @@
 package com.ruizurraca.luziatestdavid.presentation.state
 
+import androidx.compose.runtime.Immutable
 import com.ruizurraca.luziatestdavid.presentation.model.ChatMessageUiModel
 
+@Immutable
 sealed interface ChatUiState {
     val messages: List<ChatMessageUiModel>
     val draft: String
