@@ -209,3 +209,25 @@ User-surfaced UX suggestions + design decisions for Phase 7.3.3 (UI/UX Improveme
 ### Risks flagged
 
 **`role_prompts` translation risk:** `role_prompts` strings are sent to the backend as the per-user-message `role_prompt` that steers the LLM (per Fork 4). Translating them changes the language of the system prompt delivered to the upstream model. In practice most chat LLMs reply in the user's message language regardless of system-prompt language, but quality can shift subtly. **Mitigation:** if reply quality regresses for Spanish / Portuguese users after 7.3.3.F, revert the specific `role_prompts` subset back to English without touching the rest of the translation set.
+
+---
+
+## Phase 10 — Golden Rules Revision (2026-04-19)
+
+### Fork 6 — Output-side TTS carve-out on Rules #1 and #6
+
+The original Golden Rules prohibited **all** local ASR/TTS and **all** audio controls in the message list. During Phase 10 polish planning the user requested a "read aloud" affordance on assistant replies (surfaced on the most recent received message). Rather than reject the feature or bolt on a workaround, Rules #1 and #6 were narrowed to reflect the actual architectural concern (no local audio processing on the **input** path) and permit a specific, bounded output-side affordance.
+
+**Architectural invariant preserved (unchanged):**
+*   No local STT / ASR — user audio continues to be captured raw and sent to the backend for Whisper transcription.
+*   No third-party TTS engines (e.g., bundled ML models, cloud TTS SDKs from other vendors).
+*   No automatic or background playback — the user must initiate each read-aloud via an explicit tap.
+
+**Newly permitted:**
+*   Android system `TextToSpeech` (`android.speech.tts.TextToSpeech`) invoked on assistant replies on user demand, via a single icon-button affordance.
+*   Placement of the affordance is a UX decision (ROADMAP 10.6.D currently scopes it to the last received assistant message only).
+
+**Why the narrowing — not a full relaxation:** the original rules were load-bearing against two classes of scope creep: (a) duplicating backend Whisper responsibilities on-device (input path), and (b) turning the text-only chat into a media-app with waveforms, scrubbers, and playback controls for recorded audio (output path). Narrowing Rule #1 to the input path keeps (a) intact; narrowing Rule #6 to "no playback of *recorded* audio" keeps (b) intact while allowing synthetic speech rendered from already-rendered text.
+
+Impacted specs: `CONTEXT.md §Golden Rules #1, #6`.
+Implementation: tracked as ROADMAP 10.6.D.
