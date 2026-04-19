@@ -231,3 +231,40 @@ The original Golden Rules prohibited **all** local ASR/TTS and **all** audio con
 
 Impacted specs: `CONTEXT.md §Golden Rules #1, #6`.
 Implementation: tracked as ROADMAP 10.6.D.
+
+---
+
+## Phase 10.6 — Chat UX Layout Decisions (2026-04-19)
+
+Three coupled refinements that landed across 10.6.A / 10.6.B / 10.6.C, together reshaping how the chat screen composes its chrome, message list, and input bar.
+
+### 10.6.A — Retry affordance relocated below the bubble
+
+*   `AssistantMessageBubble` no longer hosts the retry button. Its `onRetry: (() -> Unit)?` parameter was replaced by `isRetryable: Boolean`, used only to select the 7.3.3.B friendly-copy variant. The bubble itself stays decoupled from the retry callback.
+*   New `RetryAssistantReplyButton` composable — a `TextButton` with `Refresh` icon + `"Retry reply"` label — is rendered beneath the latest FAILED assistant row by `ChatScreenContent`, inside a `Column(verticalArrangement = spacedBy(4.dp))` that stacks bubble + button.
+*   **Why:** the in-bubble IconButton got visually cramped under longer-text locales (confirmed in Spanish, where `"Reintentar respuesta"` vied with the body copy for horizontal room).
+
+### 10.6.B — Sticky top chrome + bottom-anchored message list
+
+`ChatScreenContent` restructured into three zones: topBar (chrome stack) / LazyColumn (messages) / bottomBar (input). The final shape came after two failed device-verification attempts — the learnings are load-bearing for future Compose layout work.
+
+**Final shape:**
+*   `ChatTopAppBar` + `RoleSelectorChips` stacked inside `Scaffold.topBar`. Both stay pinned when the IME opens — previously the role selector sat in the content area and could get squeezed out.
+*   LazyColumn uses natural (chronological) item order + `verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Bottom)` for short-list bottom-anchoring + `LaunchedEffect(state.messages.size) { listState.scrollToItem(lastIndex) }` to keep the newest message visible as the list grows.
+*   `AndroidManifest.xml` gained `android:windowSoftInputMode="adjustResize"` on `MainActivity`.
+*   `ChatInputBar` inside `Scaffold.bottomBar` applies `Modifier.imePadding()` so it anchors above the IME.
+
+**Two prior attempts that failed device verification (recorded so the mistakes aren't repeated):**
+1.  **`LazyColumn(reverseLayout = true)` + `state.messages.asReversed()` + default `Arrangement.spacedBy(6.dp)` (Alignment.Top)** — Compose docs state explicitly that `reverseLayout` does not change `verticalArrangement` alignment. The default-Top alignment on `spacedBy` overrode the bottom-anchor that `reverseLayout`'s default `Arrangement.Bottom` would have provided. Robolectric's long-list test passed because viewport composition is independent of short-list anchoring — the failure only surfaced on device with a short conversation. User flagged via [`issues/messages_at_top.png`](issues/messages_at_top.png).
+2.  **Missing `android:windowSoftInputMode`** — without an explicit `adjustResize`, API 30 + `enableEdgeToEdge()` fell back to `adjustPan` on the LG LM-G900, which panned the entire window up when the IME opened and pushed the `topBar` above the screen. User flagged via [`issues/hidden_top_bar.png`](issues/hidden_top_bar.png).
+3.  **Third-pass learning — `adjustResize` alone wasn't enough.** With `enableEdgeToEdge()` on API 30+, `adjustResize` no longer physically resizes the window; the IME is reported as `WindowInsets.ime` instead. Scaffold's default `contentWindowInsets` does not include IME, so `bottomBar` doesn't auto-push above the keyboard. `Modifier.imePadding()` on the input bar is the canonical fix.
+
+### 10.6.C — Auto-expanding input field (1 → 4 lines)
+
+*   `ChatInputBar` replaced `BottomAppBar { Row(…) }` with `Surface(color = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 3.dp) { Row(verticalAlignment = Alignment.Bottom, …) }`. **`BottomAppBar`'s fixed `.height(BottomAppBarDefaults.ContainerHeight = 80.dp)` internal clamp defeated any `maxLines` cap on the TextField** — the ROADMAP-predicted "one-line fix via `maxLines = 4`" turned out to require a parent-container rewrite. The `Surface + Row` replacement preserves the M3 visual (same tonal colour + 3 dp elevation) while lifting the clamp.
+*   `OutlinedTextField` got `minLines = 1, maxLines = 4` so it grows line-by-line with typed content and scrolls internally past four lines.
+*   The placeholder `Text` got `maxLines = 1` + `TextOverflow.Ellipsis`. Without this, the Spanish placeholder copy `"Escribe un mensaje o toca el micro…"` wrapped to 2 lines on narrow phone widths, driving the empty field to render at 2-line height and defeating the compact empty-state intent. Surfaced during device verification after the first two changes shipped.
+
+### Cross-cutting learning
+
+All three phases exposed a single broader pattern: **Robolectric + Compose unit tests cannot reliably validate visual-layout anchoring, IME behaviour, or parent-container clamping interactions.** Tests that passed in the harness still produced broken UI on the device. Recorded in the auto-memory `ui_tasks_device_verification.md`: for any task touching `LazyColumn` anchoring, `Arrangement` alignments, `Modifier.imePadding` / `WindowInsets.ime`, `android:windowSoftInputMode`, Scaffold chrome placement, or parent height-clamping composables (`BottomAppBar`, etc.), device verification is mandatory before marking the task complete.

@@ -158,10 +158,19 @@ sealed interface Resource<out T> {
 ## 🧪 Testing Protocol (TDD)
 The project follows the **RED $\rightarrow$ GREEN $\rightarrow$ REFACTOR** cycle.
 
-1.  **Unit Testing:** 
+1.  **Unit Testing:**
     *   **Tools:** `JUnit 5`, `MockK`, `Turbine` (for Flow/SSE testing).
     *   **Target:** `UseCases`, `Mappers`, `SseParser`, `ViewModels`.
 2.  **Integration Testing:**
     *   **Tools:** `Ktor MockEngine`, `Room in-memory database`.
     *   **Target:** `RepositoryImpl`, `LuziaApiClient`, `DAO`.
-3.  **Async Testing:** Use `runTest` and `StandardTestDispatcher`. **Never** use `Thread.sleep()`. Inject dispatchers via Hilt to allow for deterministic testing.
+3.  **Compose / UI Testing:**
+    *   **Tools:** `createComposeRule` + `Robolectric` (JUnit 4 runner via `junit-vintage-engine`).
+    *   **Target:** individual Compose leaves (`AssistantMessageBubble`, `ChatInputBar`, etc.) and the stateless `ChatScreenContent` scaffold.
+    *   **Limitation** (recorded in `MEMORY.md §Phase 10.6 — Chat UX Layout Decisions`): Robolectric's layout pass does **not** exercise real-device visual anchoring, IME show/hide, or parent-container clamping behaviour. Any task touching `LazyColumn` anchoring, `Arrangement.*`, `Modifier.imePadding` / `WindowInsets.ime`, `android:windowSoftInputMode`, Scaffold chrome placement, or `BottomAppBar`-style height-clamping parents **requires device verification** before being marked complete.
+4.  **Activity-Level Smoke Testing (Phase 8):**
+    *   **Tools:** `@HiltAndroidTest` + `HiltAndroidRule` + `@UninstallModules(NetworkModule, DatabaseModule, AudioModule)` + `@Config(application = HiltTestApplication::class)` + `RobolectricTestRunner` + `ActivityScenario`.
+    *   **Target:** `MainActivitySmokeTest` — a single test that launches the real activity, materialises the Hilt test graph, and asserts `ChatScreen` renders core chrome (mic button, brand title, persona chips, disabled clear button).
+    *   **Test module:** `TestAppModule` (under `src/test/`) substitutes three production modules that can't boot under Robolectric: `MockEngine`-backed `HttpClient` (replaces `NetworkModule`), in-memory `LuziaDatabase` (replaces `DatabaseModule`), and a fake `AudioRecorder` (replaces `AudioModule`). `CatalogModule` / `RepositoryModule` / `DispatcherModule` stay intact — they have no native / system-service dependencies.
+5.  **Coverage (Phase 10.2.A):** Jacoco line/branch coverage report via `./gradlew :app:jacocoStagingDebugCoverageReport`. HTML + XML output under `app/build/reports/jacoco/`. Uses AGP's built-in `enableUnitTestCoverage = true` on the debug build type — class directories point at `intermediates/classes/<variant>/transformStagingDebugClassesWithAsm/dirs` (AGP 9 post-ASM path). Excludes cover Hilt factories, Room generated impls, Compose singletons, `R` / `BuildConfig` / `Manifest` / test classes. Compose UI packages report 0% because Jacoco cannot trace through Compose lambda indirection — `ChatScreenContentTest` + Compose leaf tests still cover those paths, just not numerically.
+6.  **Async Testing:** Use `runTest` and `StandardTestDispatcher`. **Never** use `Thread.sleep()`. Inject dispatchers via Hilt to allow for deterministic testing.

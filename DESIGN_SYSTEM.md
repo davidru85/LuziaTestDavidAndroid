@@ -4,11 +4,14 @@
 The UI follows **Material 3 Expressive** principles: adaptive shapes, motion-driven feedback, and dynamic personalization (Material You). The focus is on reducing "latency anxiety" during AI processing through fluid transitions.
 
 ## 📱 Screen Architecture: Single-Screen Layout
-A single `ConversationScreen` with four vertical zones:
-1.  **Top App Bar:** Title + `DeleteSweep` action.
-2.  **Role Selector:** Horizontal `FilterChip` strip (Single-select).
-3.  **Message List:** `LazyColumn` (Chronological, bottom-up).
-4.  **Input Bar:** `TextField` + Adaptive `IconButton` (Mic $\leftrightarrow$ Send).
+A single `ChatScreen` with **three anchored zones** (updated Phase 10.6.B — role selector moved out of the scrolling content area into the fixed top chrome):
+
+1.  **Top chrome — stacked inside `Scaffold.topBar`:**
+    *   `ChatTopAppBar` — title + `Icons.Outlined.DeleteSweep` action.
+    *   `RoleSelectorChips` — horizontal `FilterChip` strip (single-select).
+    Both stay pinned when the IME opens, so the user always sees the persona selector, app title, and delete affordance even while typing.
+2.  **Message List:** `LazyColumn` between top chrome and input bar. Messages rendered in natural (chronological) order with `verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Bottom)` — short conversations hug the input bar with empty space above; long conversations fill the viewport and rely on a `LaunchedEffect` keeping the newest message visible.
+3.  **Input Bar:** `ChatInputBar` — auto-expanding `OutlinedTextField` (1 → 4 lines) + `MorphingActionButton` (Mic ↔ Send). Pinned above the IME via `Modifier.imePadding()`.
 
 ---
 
@@ -48,15 +51,25 @@ All messages are **text-only**. No audio players or waveforms.
 *   **Container:** `Surface` with `ShapeDefaults.ExtraLarge`.
 *   **Color:** `surfaceVariant`.
 *   **States:**
-    *   `LOADING`: **Shimmer Effect**. Use a `ShimmerBox` (animated gradient) representing 2-3 lines of text.
-    *   `RECEIVED`: Text content. During SSE streaming, use a soft `alpha` fade-in for each new token.
+    *   `LOADING`: **Shimmer Effect**. Use a `ShimmerBox` (animated gradient) representing 2–3 lines of text. `LiveRegion.Polite` so TalkBack announces *"Loading response"* when the shimmer appears.
+    *   `STREAMING`: Partial content as SSE tokens arrive; soft `alpha` fade-in per token. `LiveRegion.Polite` so TalkBack announces new tokens as they stream in.
+    *   `RECEIVED`: Complete text content. **Not** a live region — historical messages should not be re-announced when the user scrolls them back into view.
+    *   `FAILED`: Warning icon + friendly copy that varies by retryability (Phase 7.3.3.B):
+        *   *Latest* failure (retryable) → *"I've gone blank. Mind retrying?"*
+        *   *Older* failures (non-retryable) → *"Sorry, empty message"*
+        The retry button itself is rendered **beneath** the bubble (not inside it) by `ChatScreenContent`, as a `RetryAssistantReplyButton` `TextButton` — moved out in Phase 10.6.A because the in-bubble IconButton got visually cramped in longer-text locales (Spanish, Portuguese).
 
 ### 4. Input Bar (Adaptive Interaction)
-*   **Container:** `BottomAppBar` with `WindowInsets` handling.
+*   **Container:** `Surface(color = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 3.dp)` wrapping a `Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp))`.
+    *   **Replaced `BottomAppBar` in Phase 10.6.C.** `BottomAppBar` applies a fixed `.height(BottomAppBarDefaults.ContainerHeight = 80.dp)` internally, which clamped the TextField and defeated any `maxLines` cap. The `Surface + Row` replacement lifts the clamp while preserving the M3 visual (same tonal colour + 3 dp elevation).
+*   **IME handling:** `Modifier.imePadding()` on the input bar composable so it anchors above the keyboard. Scaffold's default `contentWindowInsets` does NOT include `WindowInsets.ime` on API 30+ edge-to-edge, so the padding must be applied explicitly.
 *   **TextField:** `OutlinedTextField` (M3) with placeholder `"Type a message or tap the mic…"`.
-*   **The Morphing Button:** Use `AnimatedContent` to switch between:
-    *   **Mode A (Empty Field):** `FilledIconButton` with `Icons.Filled.Mic`.
-    *   **Mode B (Text Present):** `IconButton` with `Icons.AutoMirrored.Filled.Send`.
+    *   **Auto-expanding 1 → 4 lines** (Phase 10.6.C): `minLines = 1, maxLines = 4`. The field starts single-line, grows as the user types, caps at four lines, then scrolls internally.
+    *   **Placeholder** constrained to `maxLines = 1` + `TextOverflow.Ellipsis` so long locale copy (e.g., Spanish *"Escribe un mensaje o toca el micro…"*) cannot wrap and force the empty field to render at 2-line height.
+*   **The Morphing Button:** `AnimatedContent` switching between:
+    *   **Mode A (Empty Field, Not Recording):** `FilledIconButton` with `Icons.Filled.Mic`.
+    *   **Mode B (Recording):** `FilledIconButton` with `Icons.Filled.Stop` (7.3.3.A).
+    *   **Mode C (Text Present):** `IconButton` with `Icons.AutoMirrored.Filled.Send`.
 
 ---
 
@@ -69,9 +82,10 @@ The UI must react to the `UiState` transitions:
 3.  **`Processing`**: Input bar disabled. `LinearProgressIndicator` stays active with label `"Thinking..."`.
 4.  **`Streaming`**: `LazyColumn` uses `animateScrollToItem` to follow the latest token.
 
-### Auto-Scroll Logic
-*   **Constraint:** Only scroll to bottom if the user is already near the bottom.
-*   **Implementation:** Use `derivedStateOf` on `LazyListState`. If `firstVisibleItemIndex` is far from the end, suspend auto-scrolling to allow the user to read history.
+### Auto-Scroll Logic (updated Phase 10.6.B)
+*   **Short lists (content fits the viewport):** anchored to the bottom via `verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Bottom)` — no scrolling needed; messages naturally hug the input bar with empty space above the oldest.
+*   **Long lists (content exceeds the viewport):** a `LaunchedEffect(state.messages.size) { listState.scrollToItem(state.messages.lastIndex) }` advances the viewport every time the message count changes. This covers both new messages arriving and the streaming case where the final assistant row extends in-place.
+*   **Why not `reverseLayout = true`?** Compose docs state explicitly that `reverseLayout` does **not** change `verticalArrangement` alignment, and the default `Arrangement.spacedBy(space)` uses `Alignment.Top` regardless — which overrides the bottom-anchor the `reverseLayout` default would otherwise provide. Using `Arrangement.spacedBy(_, Alignment.Bottom)` + natural item order + an explicit `LaunchedEffect` is less subtle and matches real device expectations.
 
 ---
 
