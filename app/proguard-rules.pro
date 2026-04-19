@@ -5,17 +5,31 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep line numbers in release stack traces (cheap; ~1KB APK cost).
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# kotlinx.serialization — @Serializable DTOs rely on generated companion-
+# object serializers that are only referenced through reflection by the
+# runtime. R8 full-mode strips them unless kept explicitly.
+# Hilt / Room / Ktor / Compose ship their own consumer-proguard-rules
+# and do not need manual entries here.
+-keepattributes *Annotation*, InnerClasses
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+-keep,includedescriptorclasses class **$$serializer { *; }
+-keepclassmembers @kotlinx.serialization.Serializable class ** {
+    <fields>;
+    static **$Companion Companion;
+}
+-if @kotlinx.serialization.Serializable class ** {
+    static **$Companion Companion;
+}
+-keepclassmembers class <1>$Companion {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# @Serializable object singletons expose their serializer via INSTANCE.
+-keepclasseswithmembers class ** {
+    static <any> INSTANCE;
+    kotlinx.serialization.KSerializer serializer(...);
+}
