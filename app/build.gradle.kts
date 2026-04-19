@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.androidx.baselineprofile)
     jacoco
 }
 
@@ -47,6 +48,16 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        // Benchmark build type: mirrors release (R8 + resource-shrink)
+        // but uses the debug signing config so the APK is installable,
+        // and is not debuggable so ART can AOT-optimize the baseline
+        // profile. Only used by the :baseline-profile test module.
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+            isDebuggable = false
         }
     }
 
@@ -195,4 +206,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    // Consumes the generated baseline profile from the :baseline-profile
+    // producer module at build time; the plugin merges it into the APK.
+    "baselineProfile"(project(":baseline-profile"))
 }
