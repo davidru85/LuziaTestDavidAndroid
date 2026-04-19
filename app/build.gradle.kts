@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    jacoco
 }
 
 val localProps = Properties().apply {
@@ -36,6 +37,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -86,6 +90,56 @@ kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+// AGP 9 emits post-transform bytecode under intermediates/classes/<variant>/transformClassesWithAsm/dirs —
+// that path is what the JaCoCo agent instrumented at test-time, so the report must point there.
+tasks.register<JacocoReport>("jacocoStagingDebugCoverageReport") {
+    group = "verification"
+    description = "Generate Jacoco coverage report for the stagingDebug unit-test run."
+    dependsOn("testStagingDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    val coverageExcludes = listOf(
+        "**/R.class",
+        "**/R\$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        "**/*\$WhenMappings.*",
+        "**/*_Factory*.*",
+        "**/*_MembersInjector.*",
+        "**/*_HiltModules*.*",
+        "**/Hilt_*.*",
+        "**/Dagger*Component*.*",
+        "**/*_GeneratedInjector.*",
+        "**/*_Impl.*",
+        "**/*Impl_*.*",
+        "**/ComposableSingletons*",
+    )
+
+    classDirectories.setFrom(
+        fileTree(layout.buildDirectory.dir("intermediates/classes/stagingDebug/transformStagingDebugClassesWithAsm/dirs")) {
+            exclude(coverageExcludes)
+        }
+    )
+
+    sourceDirectories.setFrom(files("${project.projectDir}/src/main/java"))
+
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include("outputs/unit_test_code_coverage/stagingDebugUnitTest/testStagingDebugUnitTest.exec")
+        }
+    )
 }
 
 dependencies {
