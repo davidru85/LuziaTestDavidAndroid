@@ -7,6 +7,7 @@ import com.ruizurraca.luziatestdavid.data.remote.dto.TranscribeResponseDto
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
@@ -95,6 +96,82 @@ class L1ApiClientTest {
         assertThrows<ResponseException> {
             apiClient.transcribe(audio = byteArrayOf(0x1))
         }
+    }
+
+    // Phase 10.6.H — optional `lang` multipart part (API_SPEC v1.4.0)
+
+    @Test
+    fun `transcribe includes lang form part when lang arg is non-null`() = runTest {
+        var capturedBody: String? = null
+        val apiClient = clientWith { request ->
+            capturedBody = String(request.body.toByteArray(), Charsets.UTF_8)
+            respond(
+                content = """{"text":"hola"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+
+        apiClient.transcribe(audio = byteArrayOf(0x1, 0x2, 0x3), lang = "es")
+
+        assertNotNull(capturedBody)
+        // Multipart body carries `Content-Disposition: form-data; name="lang"`
+        // followed by the value on its own line. Searching both the disposition
+        // header and the value keeps the assertion robust against boundary /
+        // line-ending variations.
+        assertTrue(
+            capturedBody!!.contains("name=lang"),
+            "Expected multipart body to contain `name=\"lang\"` disposition, got:\n$capturedBody"
+        )
+        assertTrue(
+            capturedBody!!.contains("\r\nes\r\n") || capturedBody!!.contains("\nes\n"),
+            "Expected multipart body to contain the lang value \"es\" as a form part, got:\n$capturedBody"
+        )
+    }
+
+    @Test
+    fun `transcribe omits lang form part when lang arg is null`() = runTest {
+        var capturedBody: String? = null
+        val apiClient = clientWith { request ->
+            capturedBody = String(request.body.toByteArray(), Charsets.UTF_8)
+            respond(
+                content = """{"text":"hi"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+
+        apiClient.transcribe(audio = byteArrayOf(0x1), lang = null)
+
+        assertNotNull(capturedBody)
+        assertTrue(
+            !capturedBody!!.contains("name=lang"),
+            "Expected multipart body NOT to contain a `lang` form part for null lang, got:\n$capturedBody"
+        )
+    }
+
+    @Test
+    fun `transcribe omits lang form part when lang arg is defaulted`() = runTest {
+        // Belt-and-braces: a caller that does not mention lang at all (old
+        // call sites before the wire-up rolls through the codebase) must not
+        // accidentally gain a lang part on the wire.
+        var capturedBody: String? = null
+        val apiClient = clientWith { request ->
+            capturedBody = String(request.body.toByteArray(), Charsets.UTF_8)
+            respond(
+                content = """{"text":"hi"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+
+        apiClient.transcribe(audio = byteArrayOf(0x1))
+
+        assertNotNull(capturedBody)
+        assertTrue(
+            !capturedBody!!.contains("name=lang"),
+            "Expected multipart body NOT to contain a `lang` form part when lang arg is defaulted, got:\n$capturedBody"
+        )
     }
 
     // endregion
