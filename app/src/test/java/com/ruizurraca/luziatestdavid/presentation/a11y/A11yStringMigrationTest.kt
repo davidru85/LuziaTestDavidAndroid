@@ -79,6 +79,16 @@ class A11yStringMigrationTest {
         assertEquals("Failed to send", context.getString(R.string.cd_failed_to_send))
     }
 
+    @Test
+    fun `cd_tts_play matches expected English value`() {
+        assertEquals("Read aloud", context.getString(R.string.cd_tts_play))
+    }
+
+    @Test
+    fun `cd_tts_stop matches expected English value`() {
+        assertEquals("Stop reading aloud", context.getString(R.string.cd_tts_stop))
+    }
+
     // endregion
 
     // region Dialog copy (mic-rationale + Tier-3 dismiss)
@@ -356,6 +366,14 @@ class A11yStringMigrationTest {
         assertEquals(
             "Something went wrong. Please try again.",
             context.getString(R.string.tier1_unexpected_failure)
+        )
+    }
+
+    @Test
+    fun `tier1_tts_unavailable matches expected English value`() {
+        assertEquals(
+            "Read aloud isn't available on this device.",
+            context.getString(R.string.tier1_tts_unavailable)
         )
     }
 

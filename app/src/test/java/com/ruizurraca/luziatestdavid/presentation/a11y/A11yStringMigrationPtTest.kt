@@ -104,6 +104,16 @@ class A11yStringMigrationPtTest {
         assertEquals("Falha no envio", context.getString(R.string.cd_failed_to_send))
     }
 
+    @Test
+    fun `cd_tts_play matches Portuguese value`() {
+        assertEquals("Ler em voz alta", context.getString(R.string.cd_tts_play))
+    }
+
+    @Test
+    fun `cd_tts_stop matches Portuguese value`() {
+        assertEquals("Parar leitura", context.getString(R.string.cd_tts_stop))
+    }
+
     // endregion
 
     // region Dialog copy (mic permission + Tier-3 OK + clear-conversation)
@@ -368,6 +378,14 @@ class A11yStringMigrationPtTest {
         assertEquals(
             "Algo correu mal. Tenta novamente.",
             context.getString(R.string.tier1_unexpected_failure)
+        )
+    }
+
+    @Test
+    fun `tier1_tts_unavailable matches Portuguese value`() {
+        assertEquals(
+            "A leitura em voz alta não está disponível neste dispositivo.",
+            context.getString(R.string.tier1_tts_unavailable)
         )
     }
 
