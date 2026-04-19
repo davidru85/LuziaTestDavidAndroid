@@ -22,6 +22,7 @@ import com.ruizurraca.luziatestdavid.domain.model.PersonaEntry
 import com.ruizurraca.luziatestdavid.presentation.component.AssistantMessageBubble
 import com.ruizurraca.luziatestdavid.presentation.component.ChatInputBar
 import com.ruizurraca.luziatestdavid.presentation.component.ChatTopAppBar
+import com.ruizurraca.luziatestdavid.presentation.component.RetryAssistantReplyButton
 import com.ruizurraca.luziatestdavid.presentation.component.RoleSelectorChips
 import com.ruizurraca.luziatestdavid.presentation.component.UserMessageBubble
 import com.ruizurraca.luziatestdavid.presentation.model.AssistantStreamState
@@ -91,10 +92,24 @@ fun ChatScreenContent(
                 items(items = state.messages, key = { it.id }) { message ->
                     when (message) {
                         is ChatMessageUiModel.User -> UserMessageBubble(model = message)
-                        is ChatMessageUiModel.Assistant -> AssistantMessageBubble(
-                            model = message,
-                            onRetry = if (message.id == lastFailedAssistantId) onRetryLastFailure else null
-                        )
+                        is ChatMessageUiModel.Assistant -> {
+                            // The retry button is extracted from the bubble
+                            // (Phase 10.6.A) and rendered beneath it when — and
+                            // only when — this assistant row is the latest FAILED
+                            // message in the conversation. `lastFailedAssistantId`
+                            // is already derived from messages, so this equality
+                            // check implies streamState == FAILED by construction.
+                            val isRetryable = message.id == lastFailedAssistantId
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                AssistantMessageBubble(
+                                    model = message,
+                                    isRetryable = isRetryable
+                                )
+                                if (isRetryable) {
+                                    RetryAssistantReplyButton(onClick = onRetryLastFailure)
+                                }
+                            }
+                        }
                     }
                 }
             }
