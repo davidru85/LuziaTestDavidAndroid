@@ -48,6 +48,8 @@
     <string name="cd_sending_message">A enviar mensagem</string>
     <string name="cd_message_sent">Mensagem enviada</string>
     <string name="cd_failed_to_send">Falha no envio</string>
+    <string name="cd_tts_play">Ler em voz alta</string>
+    <string name="cd_tts_stop">Parar leitura</string>
 
     <!-- Dialog copy -->
     <string name="dialog_mic_permission_title">É necessária permissão do microfone</string>

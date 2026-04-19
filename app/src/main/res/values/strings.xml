@@ -31,6 +31,8 @@
     <string name="cd_sending_message">Sending message</string>
     <string name="cd_message_sent">Message sent</string>
     <string name="cd_failed_to_send">Failed to send</string>
+    <string name="cd_tts_play">Read aloud</string>
+    <string name="cd_tts_stop">Stop reading aloud</string>
 
     <!-- Dialog copy (Phase 7.3.1.A) -->
     <string name="dialog_mic_permission_title">Microphone permission needed</string>
