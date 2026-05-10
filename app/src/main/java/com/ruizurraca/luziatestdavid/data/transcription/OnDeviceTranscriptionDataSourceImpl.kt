@@ -22,21 +22,23 @@ import javax.inject.Singleton
 class OnDeviceTranscriptionDataSourceImpl(
     private val context: Context,
     private val sdkInt: Int,
-    private val m4aToWavConverter: M4aToWavConverter
+    private val m4aToWavConverter: M4aToWavConverter,
+    private val clientFactory: SpeechRecognitionClientFactory
 ) : OnDeviceTranscriptionDataSource {
 
     @Inject
     constructor(
         @ApplicationContext context: Context,
-        m4aToWavConverter: M4aToWavConverter
-    ) : this(context, Build.VERSION.SDK_INT, m4aToWavConverter)
+        m4aToWavConverter: M4aToWavConverter,
+        clientFactory: SpeechRecognitionClientFactory
+    ) : this(context, Build.VERSION.SDK_INT, m4aToWavConverter, clientFactory)
 
     override suspend fun isAvailable(): Boolean {
         if (sdkInt < MIN_SUPPORTED_SDK) {
             Log.d(TAG, "isAvailable: SDK $sdkInt < $MIN_SUPPORTED_SDK -> false")
             return false
         }
-        val recognizer = SpeechRecognition.getClient(buildOptions(languageTag = null))
+        val recognizer = clientFactory.getClient(buildOptions(languageTag = null))
         return try {
             val status = recognizer.checkStatus()
             val available = status == FeatureStatus.AVAILABLE
@@ -55,7 +57,7 @@ class OnDeviceTranscriptionDataSourceImpl(
         // ML Kit's recognizer reads the PFD as raw PCM, so we transcode the
         // recorder's AAC-in-MP4 to a 16-bit PCM WAV first. See M4aToWavConverter.
         val wav = m4aToWavConverter.convertToWav(audio)
-        val recognizer = SpeechRecognition.getClient(buildOptions(languageTag))
+        val recognizer = clientFactory.getClient(buildOptions(languageTag))
         return try {
             ParcelFileDescriptor.open(wav, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
                 val request = speechRecognizerRequest {

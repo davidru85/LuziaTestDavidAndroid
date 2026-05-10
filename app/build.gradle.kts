@@ -93,6 +93,7 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
+            it.maxHeapSize = "2048m"
             it.useJUnitPlatform()
             // Intentionally NOT setting maxParallelForks — measured on 2026-04-19
             // with 6 forks (half of 12 cores), wall-clock regressed 29 s → 48 s.
