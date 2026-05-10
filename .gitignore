@@ -28,3 +28,4 @@ local.properties
 .idea/deviceManager.xml
 .idea/androidTestResultsUserPreferences.xml
 .idea/markdown.xml
+.idea/appInsightsSettings.xml
