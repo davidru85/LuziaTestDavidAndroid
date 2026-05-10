@@ -6,7 +6,6 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.common.audio.AudioSource
-import com.google.mlkit.genai.speechrecognition.SpeechRecognition
 import com.google.mlkit.genai.speechrecognition.SpeechRecognizerOptions
 import com.google.mlkit.genai.speechrecognition.SpeechRecognizerResponse
 import com.google.mlkit.genai.speechrecognition.speechRecognizerOptions
@@ -34,16 +33,10 @@ class OnDeviceTranscriptionDataSourceImpl(
     ) : this(context, Build.VERSION.SDK_INT, m4aToWavConverter, clientFactory)
 
     override suspend fun isAvailable(): Boolean {
-        if (sdkInt < MIN_SUPPORTED_SDK) {
-            Log.d(TAG, "isAvailable: SDK $sdkInt < $MIN_SUPPORTED_SDK -> false")
-            return false
-        }
+        if (sdkInt < MIN_SUPPORTED_SDK) return false
         val recognizer = clientFactory.getClient(buildOptions(languageTag = null))
         return try {
-            val status = recognizer.checkStatus()
-            val available = status == FeatureStatus.AVAILABLE
-            Log.d(TAG, "isAvailable: checkStatus=$status (AVAILABLE=${FeatureStatus.AVAILABLE}) -> $available")
-            available
+            recognizer.checkStatus() == FeatureStatus.AVAILABLE
         } finally {
             recognizer.close()
         }
@@ -53,7 +46,6 @@ class OnDeviceTranscriptionDataSourceImpl(
         check(sdkInt >= MIN_SUPPORTED_SDK) {
             "On-device transcription requires API $MIN_SUPPORTED_SDK+, current is $sdkInt"
         }
-        Log.d(TAG, "transcribe: file=${audio.absolutePath} size=${audio.length()} lang=$languageTag")
         // ML Kit's recognizer reads the PFD as raw PCM, so we transcode the
         // recorder's AAC-in-MP4 to a 16-bit PCM WAV first. See M4aToWavConverter.
         val wav = m4aToWavConverter.convertToWav(audio)
@@ -67,14 +59,8 @@ class OnDeviceTranscriptionDataSourceImpl(
                 var lastPartial: String? = null
                 recognizer.startRecognition(request).collect { response ->
                     when (response) {
-                        is SpeechRecognizerResponse.FinalTextResponse -> {
-                            Log.d(TAG, "FinalTextResponse: '${response.text}'")
-                            finalText.append(response.text)
-                        }
-                        is SpeechRecognizerResponse.PartialTextResponse -> {
-                            Log.d(TAG, "PartialTextResponse: '${response.text}'")
-                            lastPartial = response.text
-                        }
+                        is SpeechRecognizerResponse.FinalTextResponse -> finalText.append(response.text)
+                        is SpeechRecognizerResponse.PartialTextResponse -> lastPartial = response.text
                         is SpeechRecognizerResponse.ErrorResponse -> {
                             if (response.isNoSpeechError()) {
                                 Log.w(TAG, "No speech detected: ERROR_TYPE_NO_SPEECH_DETECTED")
@@ -83,14 +69,10 @@ class OnDeviceTranscriptionDataSourceImpl(
                             Log.e(TAG, "ErrorResponse: ${response.e}", response.e)
                             throw response.e
                         }
-                        is SpeechRecognizerResponse.CompletedResponse -> {
-                            Log.d(TAG, "CompletedResponse")
-                        }
+                        is SpeechRecognizerResponse.CompletedResponse -> Unit
                     }
                 }
-                val text = if (finalText.isNotEmpty()) finalText.toString() else lastPartial.orEmpty()
-                Log.d(TAG, "transcribe done: result='$text' (final=${finalText.isNotEmpty()})")
-                text
+                if (finalText.isNotEmpty()) finalText.toString() else lastPartial.orEmpty()
             }
         } finally {
             recognizer.close()
@@ -99,9 +81,7 @@ class OnDeviceTranscriptionDataSourceImpl(
     }
 
     private fun buildOptions(languageTag: String?) = speechRecognizerOptions {
-        locale = resolveLocale(languageTag).also {
-            Log.d(TAG, "buildOptions: locale=$it preferredMode=MODE_BASIC")
-        }
+        locale = resolveLocale(languageTag)
         preferredMode = SpeechRecognizerOptions.Mode.MODE_BASIC
     }
 

@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
-import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -47,17 +46,11 @@ class M4aToWavConverter @Inject constructor(
             val mime = format.getString(MediaFormat.KEY_MIME)!!
             val sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
             val channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
-            Log.d(TAG, "convertToWav: in=${input.length()}B mime=$mime sr=$sampleRate ch=$channels")
 
             val rawPcm = decodeToPcm(extractor, format, mime)
             val mono = if (channels == 1) rawPcm else downmixToMono(rawPcm, channels)
             val pcm = if (sampleRate == TARGET_SAMPLE_RATE) mono else resamplePcm16(mono, sampleRate, TARGET_SAMPLE_RATE)
             writeWav(output, pcm, TARGET_SAMPLE_RATE, 1)
-            Log.d(
-                TAG,
-                "convertToWav: out=${output.absolutePath} size=${output.length()}B pcmBytes=${pcm.size} " +
-                    "(${sampleRate}Hz/${channels}ch -> ${TARGET_SAMPLE_RATE}Hz/mono)"
-            )
             return output
         } finally {
             extractor.release()
@@ -190,7 +183,6 @@ class M4aToWavConverter @Inject constructor(
     }
 
     private companion object {
-        const val TAG = "OnDeviceTranscribe"
         const val TIMEOUT_US = 10_000L
         // ML Kit GenAI Speech Recognition basic mode requires 16 kHz mono PCM.
         const val TARGET_SAMPLE_RATE = 16_000
