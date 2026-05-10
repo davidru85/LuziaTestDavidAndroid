@@ -8,6 +8,8 @@ import com.ruizurraca.luziatestdavid.data.remote.mapper.ChatMapper
 import com.ruizurraca.luziatestdavid.data.remote.mapper.ErrorMapper
 import com.ruizurraca.luziatestdavid.data.remote.sse.SseEvent
 import com.ruizurraca.luziatestdavid.data.remote.sse.SseParser
+import com.ruizurraca.luziatestdavid.data.transcription.OnDeviceTranscriptionDataSource
+import com.ruizurraca.luziatestdavid.data.transcription.RemoteTranscriptionDataSource
 import com.ruizurraca.luziatestdavid.di.qualifier.IoDispatcher
 import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
@@ -33,18 +35,21 @@ class ChatRepositoryImpl @Inject constructor(
     private val errorMapper: ErrorMapper,
     private val dao: ChatMessageDao,
     private val localeProvider: LocaleProvider,
+    private val remoteTranscription: RemoteTranscriptionDataSource,
+    private val onDeviceTranscription: OnDeviceTranscriptionDataSource,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ChatRepository {
 
     override suspend fun transcribeAudio(audio: File): Resource<String> =
         withContext(ioDispatcher) {
             try {
-                val response = apiClient.transcribe(
-                    audio = audio.readBytes(),
-                    filename = audio.name,
-                    lang = localeProvider.currentLanguage()
-                )
-                Resource.Success(response.text)
+                val lang = localeProvider.currentLanguage()
+                val text = if (onDeviceTranscription.isAvailable()) {
+                    onDeviceTranscription.transcribe(audio, lang)
+                } else {
+                    remoteTranscription.transcribe(audio, lang)
+                }
+                Resource.Success(text)
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (e: Throwable) {
