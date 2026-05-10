@@ -21,11 +21,15 @@ import javax.inject.Singleton
 @Singleton
 class OnDeviceTranscriptionDataSourceImpl(
     private val context: Context,
-    private val sdkInt: Int
+    private val sdkInt: Int,
+    private val m4aToWavConverter: M4aToWavConverter
 ) : OnDeviceTranscriptionDataSource {
 
     @Inject
-    constructor(@ApplicationContext context: Context) : this(context, Build.VERSION.SDK_INT)
+    constructor(
+        @ApplicationContext context: Context,
+        m4aToWavConverter: M4aToWavConverter
+    ) : this(context, Build.VERSION.SDK_INT, m4aToWavConverter)
 
     override suspend fun isAvailable(): Boolean {
         if (sdkInt < MIN_SUPPORTED_SDK) {
@@ -48,9 +52,12 @@ class OnDeviceTranscriptionDataSourceImpl(
             "On-device transcription requires API $MIN_SUPPORTED_SDK+, current is $sdkInt"
         }
         Log.d(TAG, "transcribe: file=${audio.absolutePath} size=${audio.length()} lang=$languageTag")
+        // ML Kit's recognizer reads the PFD as raw PCM, so we transcode the
+        // recorder's AAC-in-MP4 to a 16-bit PCM WAV first. See M4aToWavConverter.
+        val wav = m4aToWavConverter.convertToWav(audio)
         val recognizer = SpeechRecognition.getClient(buildOptions(languageTag))
         return try {
-            ParcelFileDescriptor.open(audio, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
+            ParcelFileDescriptor.open(wav, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
                 val request = speechRecognizerRequest {
                     audioSource = AudioSource.fromPfd(pfd)
                 }
@@ -81,6 +88,7 @@ class OnDeviceTranscriptionDataSourceImpl(
             }
         } finally {
             recognizer.close()
+            runCatching { wav.delete() }
         }
     }
 

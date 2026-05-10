@@ -24,7 +24,8 @@ class OnDeviceTranscriptionDataSourceImplTest {
     fun `isAvailable returns false when API level is below 31`() = runTest {
         val ds = OnDeviceTranscriptionDataSourceImpl(
             context = mockk(relaxed = true),
-            sdkInt = 30
+            sdkInt = 30,
+            m4aToWavConverter = mockk(relaxed = true)
         )
 
         assertFalse(ds.isAvailable())
