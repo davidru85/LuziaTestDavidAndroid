@@ -23,6 +23,9 @@ kotlinxCoroutines = "1.10.2"
 # Persistence
 room = "2.8.4"
 
+# On-device GenAI (audio transcription via Gemini Nano / AICore)
+mlkitGenaiSpeechRecognition = "1.0.0-alpha1"
+
 # Testing
 mockk = "1.14.9"
 turbine = "1.2.1"
@@ -75,6 +78,9 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
+# On-device GenAI (audio transcription via Gemini Nano / AICore)
+mlkit-genai-speech-recognition = { group = "com.google.mlkit", name = "genai-speech-recognition", version.ref = "mlkitGenaiSpeechRecognition" }
 
 # Testing
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }

@@ -193,6 +193,12 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    // On-device speech recognition via Gemini Nano + AICore. Library minSdk is 26
+    // (functionality requires API 31+); the runtime guard in
+    // OnDeviceTranscriptionDataSourceImpl short-circuits below that. The
+    // tools:overrideLibrary in AndroidManifest.xml lets us keep app minSdk=24.
+    implementation(libs.mlkit.genai.speech.recognition)
+
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.vintage.engine)
