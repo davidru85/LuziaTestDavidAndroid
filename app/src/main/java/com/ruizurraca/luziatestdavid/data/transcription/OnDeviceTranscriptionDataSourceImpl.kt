@@ -76,6 +76,10 @@ class OnDeviceTranscriptionDataSourceImpl(
                             lastPartial = response.text
                         }
                         is SpeechRecognizerResponse.ErrorResponse -> {
+                            if (response.isNoSpeechError()) {
+                                Log.w(TAG, "No speech detected: ERROR_TYPE_NO_SPEECH_DETECTED")
+                                return@collect
+                            }
                             Log.e(TAG, "ErrorResponse: ${response.e}", response.e)
                             throw response.e
                         }
@@ -112,8 +116,14 @@ class OnDeviceTranscriptionDataSourceImpl(
         val parsed = Locale.forLanguageTag(languageTag)
         if (parsed.country.isNotBlank()) return parsed
         val region = SHORT_TAG_DEFAULT_REGION[parsed.language] ?: return parsed
-        return Locale(parsed.language, region)
+        return Locale.Builder()
+            .setLanguage(parsed.language)
+            .setRegion(region)
+            .build()
     }
+
+    private fun SpeechRecognizerResponse.ErrorResponse.isNoSpeechError(): Boolean =
+        e.message?.contains("ERROR_TYPE_NO_SPEECH_DETECTED") == true
 
     private companion object {
         const val MIN_SUPPORTED_SDK = 31
