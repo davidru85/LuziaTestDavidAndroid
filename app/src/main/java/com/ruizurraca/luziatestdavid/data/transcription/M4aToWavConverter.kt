@@ -16,7 +16,7 @@ import javax.inject.Singleton
 /**
  * Decodes an AAC-in-MPEG-4 file (the format produced by [android.media.MediaRecorder]
  * with `OutputFormat.MPEG_4` + `AudioEncoder.AAC`) to a 16-bit PCM WAV file in
- * the cache directory.
+ * the cache directory, normalized to 16 kHz mono.
  *
  * Why: ML Kit GenAI Speech Recognition's [com.google.mlkit.genai.common.audio.AudioSource.fromPfd]
  * reads the file as raw PCM. Feeding it AAC bytes results in
@@ -24,10 +24,11 @@ import javax.inject.Singleton
  * audio as silence. Decoding to PCM and wrapping in a WAV header gives the
  * recognizer the format it expects.
  *
- * The converter preserves the source sample rate and channel count — ML Kit
- * basic mode appears to accept the common 44.1 kHz / 48 kHz mono outputs that
- * MediaRecorder produces. If a future device emits a rate the recognizer
- * rejects, add a resampling pass here.
+ * The output is forced to **16 kHz mono PCM 16-bit** because ML Kit's basic
+ * mode rejects lower rates (MediaRecorder defaults to 8 kHz on many devices,
+ * which yields `NO_SPEECH_DETECTED`). Channel downmix (sum/N) and sample-rate
+ * conversion (linear interpolation) happen in-memory before the WAV is
+ * written.
  */
 @Singleton
 class M4aToWavConverter @Inject constructor(
@@ -48,9 +49,15 @@ class M4aToWavConverter @Inject constructor(
             val channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
             Log.d(TAG, "convertToWav: in=${input.length()}B mime=$mime sr=$sampleRate ch=$channels")
 
-            val pcm = decodeToPcm(extractor, format, mime)
-            writeWav(output, pcm, sampleRate, channels)
-            Log.d(TAG, "convertToWav: out=${output.absolutePath} size=${output.length()}B pcmBytes=${pcm.size}")
+            val rawPcm = decodeToPcm(extractor, format, mime)
+            val mono = if (channels == 1) rawPcm else downmixToMono(rawPcm, channels)
+            val pcm = if (sampleRate == TARGET_SAMPLE_RATE) mono else resamplePcm16(mono, sampleRate, TARGET_SAMPLE_RATE)
+            writeWav(output, pcm, TARGET_SAMPLE_RATE, 1)
+            Log.d(
+                TAG,
+                "convertToWav: out=${output.absolutePath} size=${output.length()}B pcmBytes=${pcm.size} " +
+                    "(${sampleRate}Hz/${channels}ch -> ${TARGET_SAMPLE_RATE}Hz/mono)"
+            )
             return output
         } finally {
             extractor.release()
@@ -115,6 +122,48 @@ class M4aToWavConverter @Inject constructor(
         return pcm.toByteArray()
     }
 
+    /**
+     * Average all channels of [pcm] (16-bit LE) into a single mono channel.
+     * Avoids `inBuf.short` clipping on negative values by reading directly as
+     * a signed 16-bit and using integer arithmetic for the average.
+     */
+    private fun downmixToMono(pcm: ByteArray, channels: Int): ByteArray {
+        val frames = pcm.size / 2 / channels
+        val out = ByteBuffer.allocate(frames * 2).order(ByteOrder.LITTLE_ENDIAN)
+        val inShorts = ByteBuffer.wrap(pcm).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+        repeat(frames) {
+            var sum = 0
+            repeat(channels) { sum += inShorts.get().toInt() }
+            out.putShort((sum / channels).toShort())
+        }
+        return out.array()
+    }
+
+    /**
+     * Linear-interpolation resampler for 16-bit mono PCM. Upsamples 8 kHz to
+     * 16 kHz cleanly enough for STT recognition; for downsampling at higher
+     * ratios this would need a low-pass anti-alias filter, but ML Kit only
+     * cares about hitting 16 kHz from the lower-rate side here.
+     */
+    private fun resamplePcm16(pcm: ByteArray, fromRate: Int, toRate: Int): ByteArray {
+        val inShorts = ByteBuffer.wrap(pcm).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+        val inSamples = inShorts.limit()
+        val outSamples = (inSamples.toLong() * toRate / fromRate).toInt()
+        val out = ByteBuffer.allocate(outSamples * 2).order(ByteOrder.LITTLE_ENDIAN)
+        val ratio = fromRate.toDouble() / toRate.toDouble()
+        for (i in 0 until outSamples) {
+            val srcPos = i * ratio
+            val srcIdx = srcPos.toInt()
+            val frac = srcPos - srcIdx
+            val s0 = inShorts.get(srcIdx.coerceIn(0, inSamples - 1)).toInt()
+            val s1 = inShorts.get((srcIdx + 1).coerceIn(0, inSamples - 1)).toInt()
+            val interp = (s0 * (1 - frac) + s1 * frac).toInt()
+                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
+            out.putShort(interp.toShort())
+        }
+        return out.array()
+    }
+
     private fun writeWav(out: File, pcm: ByteArray, sampleRate: Int, channels: Int) {
         val bitsPerSample = 16
         val byteRate = sampleRate * channels * bitsPerSample / 8
@@ -143,5 +192,7 @@ class M4aToWavConverter @Inject constructor(
     private companion object {
         const val TAG = "OnDeviceTranscribe"
         const val TIMEOUT_US = 10_000L
+        // ML Kit GenAI Speech Recognition basic mode requires 16 kHz mono PCM.
+        const val TARGET_SAMPLE_RATE = 16_000
     }
 }
