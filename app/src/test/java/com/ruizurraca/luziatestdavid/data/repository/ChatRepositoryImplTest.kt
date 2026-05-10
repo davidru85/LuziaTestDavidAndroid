@@ -4,10 +4,11 @@ import app.cash.turbine.test
 import com.ruizurraca.luziatestdavid.data.local.dao.ChatMessageDao
 import com.ruizurraca.luziatestdavid.data.local.entity.ChatMessageEntity
 import com.ruizurraca.luziatestdavid.data.remote.api.L1ApiClient
-import com.ruizurraca.luziatestdavid.data.remote.dto.TranscribeResponseDto
 import com.ruizurraca.luziatestdavid.data.remote.mapper.ChatMapper
 import com.ruizurraca.luziatestdavid.data.remote.mapper.ErrorMapper
 import com.ruizurraca.luziatestdavid.data.remote.sse.SseParser
+import com.ruizurraca.luziatestdavid.data.transcription.OnDeviceTranscriptionDataSource
+import com.ruizurraca.luziatestdavid.data.transcription.RemoteTranscriptionDataSource
 import com.ruizurraca.luziatestdavid.domain.common.AppError
 import com.ruizurraca.luziatestdavid.domain.common.Resource
 import com.ruizurraca.luziatestdavid.domain.locale.LocaleProvider
@@ -65,10 +66,13 @@ class ChatRepositoryImplTest {
         }
     )
     private val dao: ChatMessageDao = mockk()
+    private val remoteTranscription: RemoteTranscriptionDataSource = mockk()
+    private val onDeviceTranscription: OnDeviceTranscriptionDataSource = mockk()
     private val dispatcher = UnconfinedTestDispatcher()
-    // Default null-lang provider: the pre-10.6.H transcribe + streamChat tests
-    // don't care about the wire `lang` field. A dedicated test further down
-    // verifies lang passthrough on transcribe with a non-null provider.
+    // Default null-lang provider: streamChat tests don't care about the
+    // wire `lang` field. The transcribe-path lang passthrough is now verified
+    // in RemoteTranscriptionDataSourceImplTest, since the repo just forwards
+    // the resolved tag to whichever datasource handles the call.
     private val localeProvider = object : LocaleProvider {
         override fun currentLanguage(): String? = null
     }
@@ -80,47 +84,46 @@ class ChatRepositoryImplTest {
         errorMapper = errorMapper,
         dao = dao,
         localeProvider = localeProvider,
+        remoteTranscription = remoteTranscription,
+        onDeviceTranscription = onDeviceTranscription,
         ioDispatcher = dispatcher
     )
 
     // region transcribeAudio
 
-    @Test
-    fun `transcribeAudio reads file bytes posts via api and returns Success`() = runTest(dispatcher) {
-        val audioBytes = byteArrayOf(0x1, 0x2, 0x3)
-        val audioFile = File.createTempFile("audio", ".m4a").apply {
-            writeBytes(audioBytes)
+    private fun tempAudioFile(): File =
+        File.createTempFile("audio", ".m4a").apply {
+            writeBytes(byteArrayOf(0x1, 0x2, 0x3))
             deleteOnExit()
         }
-        coEvery { apiClient.transcribe(any(), any(), any()) } returns TranscribeResponseDto("hello world")
+
+    @Test
+    fun `transcribeAudio routes to on-device when isAvailable returns true`() = runTest(dispatcher) {
+        val audioFile = tempAudioFile()
+        coEvery { onDeviceTranscription.isAvailable() } returns true
+        coEvery { onDeviceTranscription.transcribe(audioFile, null) } returns "hello on device"
 
         val result = repository.transcribeAudio(audioFile)
 
-        assertEquals(Resource.Success("hello world"), result)
-        coVerify { apiClient.transcribe(match { it.contentEquals(audioBytes) }, any(), any()) }
+        assertEquals(Resource.Success("hello on device"), result)
+        coVerify(exactly = 0) { remoteTranscription.transcribe(any(), any()) }
     }
 
     @Test
-    fun `transcribeAudio wraps IOException as Resource Error carrying AppError Network`() = runTest(dispatcher) {
-        val audioFile = File.createTempFile("audio", ".m4a").apply {
-            writeBytes(byteArrayOf(0x1))
-            deleteOnExit()
-        }
-        coEvery { apiClient.transcribe(any(), any(), any()) } throws IOException("socket reset")
+    fun `transcribeAudio falls back to remote when on-device isAvailable returns false`() = runTest(dispatcher) {
+        val audioFile = tempAudioFile()
+        coEvery { onDeviceTranscription.isAvailable() } returns false
+        coEvery { remoteTranscription.transcribe(audioFile, null) } returns "hello remote"
 
         val result = repository.transcribeAudio(audioFile)
 
-        assertTrue(result is Resource.Error)
-        val error = result as Resource.Error
-        assertEquals(AppError.Network(), error.error)
+        assertEquals(Resource.Success("hello remote"), result)
+        coVerify(exactly = 0) { onDeviceTranscription.transcribe(any(), any()) }
     }
 
     @Test
-    fun `transcribeAudio forwards resolved lang from LocaleProvider to apiClient (Phase 10_6_H)`() = runTest(dispatcher) {
-        val audioFile = File.createTempFile("audio", ".m4a").apply {
-            writeBytes(byteArrayOf(0x1))
-            deleteOnExit()
-        }
+    fun `transcribeAudio forwards resolved lang from LocaleProvider to whichever datasource handles the call`() = runTest(dispatcher) {
+        val audioFile = tempAudioFile()
         val repoWithEsLocale = ChatRepositoryImpl(
             apiClient = apiClient,
             sseParser = sseParser,
@@ -130,16 +133,41 @@ class ChatRepositoryImplTest {
             localeProvider = object : LocaleProvider {
                 override fun currentLanguage(): String? = "es"
             },
+            remoteTranscription = remoteTranscription,
+            onDeviceTranscription = onDeviceTranscription,
             ioDispatcher = dispatcher
         )
-        coEvery { apiClient.transcribe(any(), any(), any()) } returns TranscribeResponseDto("hola")
+        coEvery { onDeviceTranscription.isAvailable() } returns false
+        coEvery { remoteTranscription.transcribe(any(), "es") } returns "hola"
 
         repoWithEsLocale.transcribeAudio(audioFile)
 
-        // Wiring assertion: the repo must pass the resolved locale through
-        // as the third argument to apiClient.transcribe. L1ApiClientTest
-        // covers what happens to that argument on the multipart wire.
-        coVerify { apiClient.transcribe(any(), any(), "es") }
+        coVerify { remoteTranscription.transcribe(audioFile, "es") }
+    }
+
+    @Test
+    fun `transcribeAudio wraps remote IOException as Resource Error carrying AppError Network`() = runTest(dispatcher) {
+        val audioFile = tempAudioFile()
+        coEvery { onDeviceTranscription.isAvailable() } returns false
+        coEvery { remoteTranscription.transcribe(any(), any()) } throws IOException("socket reset")
+
+        val result = repository.transcribeAudio(audioFile)
+
+        assertTrue(result is Resource.Error)
+        val error = result as Resource.Error
+        assertEquals(AppError.Network(), error.error)
+    }
+
+    @Test
+    fun `transcribeAudio wraps on-device exception as Resource Error without falling back`() = runTest(dispatcher) {
+        val audioFile = tempAudioFile()
+        coEvery { onDeviceTranscription.isAvailable() } returns true
+        coEvery { onDeviceTranscription.transcribe(any(), any()) } throws IllegalStateException("model crashed")
+
+        val result = repository.transcribeAudio(audioFile)
+
+        assertTrue(result is Resource.Error)
+        coVerify(exactly = 0) { remoteTranscription.transcribe(any(), any()) }
     }
 
     // endregion
